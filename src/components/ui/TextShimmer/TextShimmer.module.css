@@ -1,0 +1,19 @@
+.shimmer {
+  --base-color: #a1a1aa; 
+  --gradient-color: #171717; 
+
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  
+  /* Gradiente que cria o efeito de brilho */
+  background-image: linear-gradient(
+    90deg,
+    var(--base-color),
+    var(--gradient-color),
+    var(--base-color)
+  );
+
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+}
