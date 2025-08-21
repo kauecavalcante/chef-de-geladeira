@@ -5,9 +5,198 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/firebase';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { Loader2, Crown, XCircle } from 'lucide-react';
+import { doc, onSnapshot, updateDoc, Timestamp } from 'firebase/firestore';
+import { Loader2, Crown, XCircle, AlertTriangle, Lock } from 'lucide-react';
 import styles from './Account.module.css';
+
+const DIETARY_OPTIONS = ['Vegetariana', 'Sem Glúten', 'Sem Lactose', 'Keto', 'Vegana'];
+
+
+
+// Informações da Conta
+const AccountTab = ({ user, initialName }: { user: any, initialName: string }) => {
+    const [displayName, setDisplayName] = useState(initialName);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSaveProfile = async () => {
+        if (!user || !displayName.trim()) {
+            alert("O nome não pode estar em branco.");
+            return;
+        }
+        setIsSaving(true);
+        try {
+            const token = await user.getIdToken();
+            await fetch('/api/update-profile', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ displayName })
+            });
+            alert("Nome atualizado com sucesso!");
+        } catch (error) {
+            console.error("Erro ao atualizar perfil:", error);
+            alert("Não foi possível atualizar o seu nome.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className={styles.card}>
+            <h2>Informações da Conta</h2>
+            <div className={styles.formGroup}>
+                <label htmlFor="name">Nome</label>
+                <input 
+                    type="text" 
+                    id="name" 
+                    className={styles.input}
+                    placeholder="Como gostaria de ser chamado?"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                />
+            </div>
+            <div className={styles.formGroup}>
+                <label htmlFor="email">Email</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    className={styles.input}
+                    value={user?.email || ''}
+                    disabled 
+                />
+            </div>
+            <button onClick={handleSaveProfile} className={styles.saveButton} disabled={isSaving}>
+                {isSaving ? <Loader2 className={styles.spinner} /> : 'Salvar Alterações'}
+            </button>
+        </div>
+    );
+};
+
+// Preferências Alimentares 
+const PreferencesTab = ({ user, initialPreferences, isPremium }: { user: any, initialPreferences: string[], isPremium: boolean }) => {
+    const [preferences, setPreferences] = useState(initialPreferences);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handlePreferenceChange = (preference: string) => {
+        setPreferences(prev => 
+          prev.includes(preference)
+            ? prev.filter(p => p !== preference)
+            : [...prev, preference]
+        );
+    };
+
+    const handleSavePreferences = async () => {
+        if (!user) return;
+        setIsSaving(true);
+        try {
+            const token = await user.getIdToken();
+            await fetch('/api/update-profile', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ dietaryPreferences: preferences })
+            });
+            alert("Preferências salvas com sucesso!");
+        } catch (error) {
+            alert("Ocorreu um erro ao salvar as preferências.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className={styles.card}>
+            <h2>Preferências Alimentares</h2>
+            <p>Selecione as suas restrições para receber receitas personalizadas.</p>
+            
+            {isPremium ? (
+                <>
+                    <div className={styles.preferencesWrapper}>
+                        {DIETARY_OPTIONS.map(option => (
+                            <div key={option} className={styles.switchWrapper}>
+                                <label htmlFor={option}>{option}</label>
+                                <label className={styles.switch}>
+                                    <input
+                                        type="checkbox"
+                                        id={option}
+                                        checked={preferences.includes(option)}
+                                        onChange={() => handlePreferenceChange(option)}
+                                    />
+                                    <span className={styles.slider}></span>
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={handleSavePreferences} disabled={isSaving} className={styles.saveButton}>
+                        {isSaving ? <Loader2 className={styles.spinner} /> : 'Salvar Preferências'}
+                    </button>
+                </>
+            ) : (
+                <div className={styles.lockedFeature}>
+                    <div className={styles.lockedIconWrapper}>
+                        <Lock size={24} />
+                    </div>
+                    <h3>Funcionalidade Premium</h3>
+                    <p>Faça o upgrade para personalizar as suas receitas com base nas suas restrições alimentares.</p>
+                    <Link href="/pricing" className={styles.upgradeButton}>Ver Planos</Link>
+                </div>
+            )}
+        </div>
+    );
+};
+
+//  Assinatura
+const SubscriptionTab = ({ subscription, onManageSubscription, isManaging }: { subscription: any, onManageSubscription: () => void, isManaging: boolean }) => {
+    const isPremium = subscription?.plan === 'premium';
+    const status = subscription?.subscription_status;
+
+    const getCancelDate = () => {
+        if (subscription?.subscription_cancel_at) {
+            const date = (subscription.subscription_cancel_at as Timestamp).toDate();
+            return date.toLocaleDateString('pt-BR');
+        }
+        return '';
+    };
+
+    return (
+        <div className={styles.card}>
+            <h2>A Minha Assinatura</h2>
+            
+            {!isPremium && status !== 'cancellation_pending' && (
+                <div className={styles.statusInactive}><XCircle size={20} /><span>Plano Gratuito</span></div>
+            )}
+            {isPremium && status === 'active' && (
+                <div className={styles.statusActive}><Crown size={20} /><span>Plano Premium Ativo</span></div>
+            )}
+            {(status === 'cancellation_pending' || status === 'past_due') && (
+                <div className={`${styles.statusInactive}`} style={{backgroundColor: '#fffbeb', color: '#b45309'}}><AlertTriangle size={20} /><span>{status === 'past_due' ? 'Pagamento Pendente' : 'Cancelamento Agendado'}</span></div>
+            )}
+
+            <p>
+                {isPremium && status === 'active' && 'Obrigado por ser um membro Premium! Desfrute de todas as funcionalidades ilimitadas.'}
+                {(isPremium && status === 'cancellation_pending') && `O seu acesso premium continua ativo até ${getCancelDate()}. Você pode reativar a sua assinatura a qualquer momento.`}
+                {(isPremium && status === 'past_due') && 'Por favor, atualize os seus dados de pagamento para não perder o acesso ao plano Premium.'}
+                {!isPremium && status !== 'cancellation_pending' && 'Faça o upgrade para o plano Premium para ter acesso a receitas ilimitadas e funcionalidades exclusivas.'}
+            </p>
+            
+            {isPremium ? (
+                <button 
+                    className={styles.manageButton}
+                    onClick={onManageSubscription}
+                    disabled={isManaging}
+                >
+                    {isManaging ? <Loader2 className={styles.spinner} /> : 'Gerir Assinatura'}
+                </button>
+            ) : (
+                <Link href="/pricing" className={styles.upgradeButton}>Fazer Upgrade</Link>
+            )}
+        </div>
+    );
+};
 
 export default function AccountPage() {
   const { user, loading: authLoading } = useAuth();
@@ -15,7 +204,8 @@ export default function AccountPage() {
   
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isCancelling, setIsCancelling] = useState(false);
+  const [activeTab, setActiveTab] = useState('account');
+  const [isManaging, setIsManaging] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -25,86 +215,64 @@ export default function AccountPage() {
     }
 
     const userDocRef = doc(db, 'users', user.uid);
-    
     const unsubscribe = onSnapshot(userDocRef, (doc) => {
       if (doc.exists()) {
         setSubscription(doc.data());
       }
       setLoading(false);
     });
-
-    
     return () => unsubscribe();
   }, [user, authLoading, router]);
 
-  const handleCancelSubscription = async () => {
-    if (!user || !subscription?.mercadopago_subscription_id) return;
-
-    setIsCancelling(true);
+  const handleManageSubscription = async () => {
+    if (!user) return;
+    setIsManaging(true);
     try {
       const token = await user.getIdToken();
-      const response = await fetch('/api/cancel-subscription', {
+      const response = await fetch('/api/manage-stripe-subscription', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-
-      if (!response.ok) {
-        throw new Error('Falha ao cancelar a assinatura.');
-      }
-      
-      alert('A sua assinatura foi cancelada com sucesso.');
-
-    } catch (error) {
-      console.error(error);
-      alert('Ocorreu um erro ao cancelar a sua assinatura. Por favor, tente novamente.');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      if (data.portalUrl) window.location.href = data.portalUrl;
+    } catch (error: any) {
+      alert(`Ocorreu um erro: ${error.message}`);
     } finally {
-      setIsCancelling(false);
+      setIsManaging(false);
     }
   };
 
   if (loading || authLoading) {
     return <div className={styles.loadingScreen}>A carregar...</div>;
   }
-
+  
   return (
     <div className={styles.pageContainer}>
       <header className={styles.header}>
         <Link href="/" className={styles.backButton}>&larr; Voltar</Link>
-        <h1>A Minha Conta</h1>
+        <h1>Profile & Settings</h1>
       </header>
       <main className={styles.mainContent}>
-        <div className={styles.card}>
-          <h2>A Minha Assinatura</h2>
-          {subscription?.plan === 'premium' && subscription.subscription_status === 'authorized' ? (
-            <div className={styles.statusActive}>
-              <Crown size={20} />
-              <span>Plano Premium Ativo</span>
-            </div>
-          ) : (
-            <div className={styles.statusInactive}>
-              <XCircle size={20} />
-              <span>Plano Gratuito</span>
-            </div>
-          )}
-          <p>
-            {subscription?.plan === 'premium' 
-              ? 'Obrigado por ser um membro Premium! Desfrute de todas as funcionalidades ilimitadas.'
-              : 'Faça o upgrade para o plano Premium para ter acesso a receitas ilimitadas e funcionalidades exclusivas.'
-            }
-          </p>
-          
-          {subscription?.plan === 'premium' && (
-            <button 
-              className={styles.cancelButton}
-              onClick={handleCancelSubscription}
-              disabled={isCancelling}
-            >
-              {isCancelling ? <Loader2 className={styles.spinner} /> : 'Cancelar Assinatura'}
-            </button>
-          )}
+        
+        <div className={styles.tabs}>
+          <button onClick={() => setActiveTab('account')} className={`${styles.tabButton} ${activeTab === 'account' ? styles.activeTab : ''}`}>Conta</button>
+          <button onClick={() => setActiveTab('preferences')} className={`${styles.tabButton} ${activeTab === 'preferences' ? styles.activeTab : ''}`}>Preferências</button>
+          <button onClick={() => setActiveTab('subscription')} className={`${styles.tabButton} ${activeTab === 'subscription' ? styles.activeTab : ''}`}>Assinatura</button>
         </div>
+
+        {activeTab === 'account' && user && (
+          <AccountTab user={user} initialName={subscription?.displayName || user?.displayName || ''} />
+        )}
+
+        {activeTab === 'preferences' && user && (
+           <PreferencesTab user={user} initialPreferences={subscription?.dietaryPreferences || []} isPremium={subscription?.plan === 'premium'} />
+        )}
+
+        {activeTab === 'subscription' && (
+          <SubscriptionTab subscription={subscription} onManageSubscription={handleManageSubscription} isManaging={isManaging} />
+        )}
+
       </main>
     </div>
   );

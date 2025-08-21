@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/firebase';
-import { collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { useRecipeStore, Recipe } from '@/store/recipeStore';
-import { ArrowLeft, ChefHat, Clock, Loader2 } from 'lucide-react';
+import { ArrowLeft, ChefHat, Clock, Loader2, Zap } from 'lucide-react';
 import styles from './History.module.css';
-
 
 type StoredRecipe = Recipe & {
   id: string;
@@ -19,12 +18,29 @@ type StoredRecipe = Recipe & {
   };
 };
 
+
+const UpgradeToSeeMore = () => (
+  <div className={styles.upgradeCard}>
+    <div className={styles.upgradeIcon}>
+      <Zap size={32} />
+    </div>
+    <div className={styles.upgradeText}>
+      <h3>Veja o seu histórico completo</h3>
+      <p>Utilizadores do plano gratuito podem ver apenas as suas 3 últimas receitas. Faça o upgrade para ter acesso ilimitado.</p>
+    </div>
+    <Link href="/pricing" className={styles.upgradeButton}>
+      Ver Planos
+    </Link>
+  </div>
+);
+
 export default function HistoryPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const setGeneratedRecipe = useRecipeStore((state) => state.setGeneratedRecipe);
 
   const [recipes, setRecipes] = useState<StoredRecipe[]>([]);
+  const [userPlan, setUserPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,12 +50,26 @@ export default function HistoryPage() {
     }
 
     if (user) {
-      const fetchRecipes = async () => {
+      const fetchData = async () => {
         try {
-          const recipesRef = collection(db, 'users', user.uid, 'recipes');
-          const q = query(recipesRef, orderBy('createdAt', 'desc')); 
-          const querySnapshot = await getDocs(q);
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+          const plan = userDoc.exists() ? userDoc.data().plan : 'free';
+          setUserPlan(plan);
+
           
+          const recipesRef = collection(db, 'users', user.uid, 'recipes');
+          let q;
+
+          if (plan === 'free') {
+            // Se for gratuito, busca as 3 últimas
+            q = query(recipesRef, orderBy('createdAt', 'desc'), limit(3));
+          } else {
+            // Se for premium, busca todas
+            q = query(recipesRef, orderBy('createdAt', 'desc'));
+          }
+          
+          const querySnapshot = await getDocs(q);
           const userRecipes = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
@@ -47,14 +77,14 @@ export default function HistoryPage() {
 
           setRecipes(userRecipes);
         } catch (error) {
-          console.error("Erro ao buscar receitas:", error);
-          alert("Não foi possível carregar o seu histórico de receitas.");
+          console.error("Erro ao buscar dados:", error);
+          alert("Não foi possível carregar os seus dados.");
         } finally {
           setLoading(false);
         }
       };
 
-      fetchRecipes();
+      fetchData();
     }
   }, [user, authLoading, router]);
 
@@ -106,6 +136,9 @@ export default function HistoryPage() {
             <p>Parece que ainda não gerou nenhuma receita. Volte à página inicial para começar!</p>
           </div>
         )}
+
+        {/* Mostra o "convite" de upgrade se for utilizador gratuito */}
+        {userPlan === 'free' && recipes.length > 0 && <UpgradeToSeeMore />}
       </main>
     </div>
   );

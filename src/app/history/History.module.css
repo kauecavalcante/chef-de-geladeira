@@ -144,3 +144,59 @@
   margin-left: auto;
   margin-right: auto;
 }
+
+.upgradeCard {
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.upgradeIcon {
+  flex-shrink: 0;
+  color: #4f46e5;
+}
+
+.upgradeText h3 {
+  font-weight: 600;
+  color: #111827;
+}
+
+.upgradeText p {
+  color: #4b5563;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.upgradeButton {
+  background-color: #111827;
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  margin-left: auto;
+  transition: background-color 0.2s;
+}
+
+.upgradeButton:hover {
+  background-color: #374151;
+}
+
+@media (max-width: 640px) {
+  .upgradeCard {
+    flex-direction: column;
+    text-align: center;
+  }
+  .upgradeButton {
+    width: 100%;
+    margin-left: 0;
+  }
+}

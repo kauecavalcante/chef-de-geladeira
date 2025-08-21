@@ -1,36 +1,33 @@
-// MUDANÇA 1: A importação agora é mais específica para a versão 2 (v2)
-import {onUserCreate} from "firebase-functions/v2/auth";
+// A importação correta para o evento de autenticação
+import { onUserCreate, AuthEvent } from "firebase-functions/v2/auth"; 
 import * as admin from "firebase-admin";
-import {setGlobalOptions} from "firebase-functions/v2";
+import { setGlobalOptions } from "firebase-functions/v2";
 
-// Inicializa o Firebase Admin SDK
 admin.initializeApp();
 const db = admin.firestore();
 
-// Opcional, mas recomendado: define a região onde sua função vai rodar
-setGlobalOptions({region: "southamerica-east1"});
+setGlobalOptions({ region: "southamerica-east1" });
 
-// MUDANÇA 2: A sintaxe da função mudou. Usamos onUserCreate diretamente.
-// O 'event' contém os dados do usuário.
-export const createNewUserProfile = onUserCreate(async (event) => {
-  // Os dados do usuário agora estão dentro de 'event.data'
+// Adicionamos o tipo correto para o evento: AuthEvent
+export const createNewUserProfile = onUserCreate(async (event: AuthEvent) => {
   const user = event.data;
-  const {uid, email} = user;
+  const { uid, email, displayName } = user;
 
-  // O resto da lógica continua a mesma
   const userProfile = {
     email: email || "",
+    displayName: displayName || "", // Guarda o nome do Google ou uma string vazia
     plan: "free",
     recipeCount: 0,
     lastResetDate: admin.firestore.FieldValue.serverTimestamp(),
+    dietaryPreferences: [], // Inicializa as preferências como um array vazio
   };
 
   try {
     await db.collection("users").doc(uid).set(userProfile);
-    console.log(`Perfil criado com sucesso para o usuário: ${uid}`);
+    console.log(`Perfil criado com sucesso para o utilizador: ${uid}`);
     return null;
   } catch (error) {
-    console.error(`Erro ao criar perfil para o usuário ${uid}:`, error);
+    console.error(`Erro ao criar perfil para o utilizador ${uid}:`, error);
     return null;
   }
 });

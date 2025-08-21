@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverRuntimeConfig: {
+    asaasApiKey: process.env.ASAAS_API_KEY,
+  },
 };
 
 export default nextConfig;

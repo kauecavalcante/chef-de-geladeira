@@ -15,20 +15,24 @@ export default function PricingPage() {
   const [loading, setLoading] = useState(false);
   const [userPlan, setUserPlan] = useState<string | null>(null); 
 
-  
   useEffect(() => {
-    if (user) {
-      const fetchUserPlan = async () => {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          setUserPlan(userDoc.data().plan); // Guarda o plano ("free" ou "premium")
-        }
-      };
-      fetchUserPlan();
+    if (authLoading) return;
+    if (!user) {
+      router.push('/auth');
+      return;
     }
-  }, [user]); 
+    
+    const fetchUserPlan = async () => {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        setUserPlan(userDoc.data().plan);
+      }
+    };
+    fetchUserPlan();
+  }, [user, authLoading, router]); 
 
+  
   const handleSubscription = async () => {
     if (!user) {
       alert("Precisa de estar logado para fazer o upgrade.");
@@ -38,27 +42,35 @@ export default function PricingPage() {
     setLoading(true);
     try {
       const token = await user.getIdToken();
-      const response = await fetch('/api/create-subscription', {
+      const response = await fetch('/api/create-stripe-subscription', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { 
+          'Authorization': `Bearer ${token}` 
+        },
       });
-      if (!response.ok) throw new Error('Falha ao criar a subscrição.');
+
       const data = await response.json();
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Falha ao iniciar o checkout.');
       }
-    } catch (error) {
-      console.error(error);
-      alert("Ocorreu um erro. Por favor, tente novamente.");
+      
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl; 
+      }
+    } catch (error: any) {
+      console.error("Erro ao iniciar assinatura:", error);
+      alert(`Ocorreu um erro: ${error.message}. Por favor, tente novamente.`);
       setLoading(false);
     }
   };
 
-  if (authLoading || (user && !userPlan)) {
+  if (authLoading || (user && userPlan === null)) {
     return <div className={styles.loadingScreen}>A carregar...</div>;
   }
 
   return (
+
     <div className={styles.pageContainer}>
       <header className={styles.header}>
         <Link href="/" className={styles.backButton}>
