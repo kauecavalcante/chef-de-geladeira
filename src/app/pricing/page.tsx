@@ -4,17 +4,18 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Check, Loader2, Crown } from 'lucide-react';
-import { db } from '@/firebase'; 
-import { doc, getDoc } from 'firebase/firestore'; 
+import { db } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { motion, Variants } from 'framer-motion';
 import { Navbar } from '@/components/Navbar/Navbar';
 import styles from './Pricing.module.css';
+import toast from 'react-hot-toast';
 
 export default function PricingPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [userPlan, setUserPlan] = useState<string | null>(null); 
+  const [userPlan, setUserPlan] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -22,7 +23,7 @@ export default function PricingPage() {
       router.push('/auth');
       return;
     }
-    
+
     const fetchUserPlan = async () => {
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
@@ -31,11 +32,11 @@ export default function PricingPage() {
       }
     };
     fetchUserPlan();
-  }, [user, authLoading, router]); 
+  }, [user, authLoading, router]);
 
   const handleSubscription = async () => {
     if (!user) {
-      alert("Precisa de estar logado para fazer o upgrade.");
+      toast.error("Precisa de estar logado para fazer o upgrade.");
       router.push('/auth');
       return;
     }
@@ -44,23 +45,23 @@ export default function PricingPage() {
       const token = await user.getIdToken();
       const response = await fetch('/api/create-stripe-subscription', {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}` 
+        headers: {
+          'Authorization': `Bearer ${token}`
         },
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Falha ao iniciar o checkout.');
       }
-      
+
       if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl; 
+        window.location.href = data.checkoutUrl;
       }
     } catch (error: any) {
       console.error("Erro ao iniciar assinatura:", error);
-      alert(`Ocorreu um erro: ${error.message}. Por favor, tente novamente.`);
+      toast.error(`Ocorreu um erro: ${error.message}. Por favor, tente novamente.`);
       setLoading(false);
     }
   };
@@ -88,7 +89,7 @@ export default function PricingPage() {
     <>
       <Navbar />
       <div className={styles.pageContainer}>
-        <motion.main 
+        <motion.main
           className={styles.mainContent}
           variants={containerVariants}
           initial="hidden"
@@ -135,8 +136,8 @@ export default function PricingPage() {
                   <span>O seu plano atual</span>
                 </div>
               ) : (
-                <button 
-                  className={`${styles.ctaButton} ${styles.premiumButton}`} 
+                <button
+                  className={`${styles.ctaButton} ${styles.premiumButton}`}
                   onClick={handleSubscription}
                   disabled={loading}
                 >

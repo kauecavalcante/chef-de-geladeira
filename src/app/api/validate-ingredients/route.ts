@@ -3,6 +3,13 @@ import OpenAI from 'openai';
 import * as admin from 'firebase-admin';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { z } from 'zod'; 
+
+
+const ValidateIngredientsSchema = z.object({
+  ingredients: z.string(),
+  preferences: z.array(z.string()),
+});
 
 
 try {
@@ -77,20 +84,26 @@ export async function POST(req: Request) {
     }
 
     const userData = userDoc.data()!;
-
     
     if (userData.plan !== 'premium') {
       return NextResponse.json({ conflict: false, conflicts: [] });
     }
 
-    const { ingredients, preferences } = await req.json();
+    const body = await req.json();
+
+   
+    const validation = ValidateIngredientsSchema.safeParse(body);
+    if (!validation.success) {
+      return new NextResponse(JSON.stringify({ message: "Dados inválidos.", errors: validation.error.errors }), { status: 400 });
+    }
+    const { ingredients, preferences } = validation.data;
+    
 
     if (!ingredients || !preferences || !Array.isArray(preferences) || preferences.length === 0) {
       return NextResponse.json({ conflict: false, conflicts: [] });
     }
 
     const ingredientExceptions = userData.ingredientExceptions || {};
-
     const allConflicts: { preference: string; ingredients: string[] }[] = [];
 
     const analysisPromises = preferences.map(async (preference: string) => {
@@ -119,7 +132,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ conflict: false, conflicts: [] });
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return new NextResponse('Dados inválidos.', { status: 400 });
+    }
     console.error('[VALIDATE_INGREDIENTS_ERROR]', error);
     return new NextResponse('Erro ao validar ingredientes.', { status: 500 });
   }

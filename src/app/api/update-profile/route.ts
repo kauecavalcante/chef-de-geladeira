@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { z } from 'zod'; 
+
+
+const UpdateProfileSchema = z.object({
+  displayName: z.string().trim().min(1, "O nome não pode estar em branco.").optional(),
+  dietaryPreferences: z.array(z.string()).optional(),
+}).strict(); 
 
 
 try {
@@ -20,7 +27,6 @@ const db = getFirestore();
 
 export async function POST(req: Request) {
   try {
-    
     const authorizationHeader = req.headers.get('Authorization');
     if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
       return new NextResponse('Não autorizado', { status: 401 });
@@ -28,16 +34,23 @@ export async function POST(req: Request) {
     const idToken = authorizationHeader.split('Bearer ')[1];
     const { uid } = await auth.verifyIdToken(idToken);
 
-   
-    const { displayName, dietaryPreferences } = await req.json();
+    const body = await req.json();
+
     
+    const validation = UpdateProfileSchema.safeParse(body);
+
+    if (!validation.success) {
+      return new NextResponse(JSON.stringify({ message: "Dados inválidos.", errors: validation.error.errors }), { status: 400 });
+    }
+    
+    const { displayName, dietaryPreferences } = validation.data;
+    
+
     const userRef = db.collection('users').doc(uid);
     const dataToUpdate: { [key: string]: any } = {};
 
-    
     if (typeof displayName === 'string') {
         dataToUpdate.displayName = displayName;
-        
         await auth.updateUser(uid, { displayName });
     }
 
@@ -45,7 +58,6 @@ export async function POST(req: Request) {
         dataToUpdate.dietaryPreferences = dietaryPreferences;
     }
 
-    
     if (Object.keys(dataToUpdate).length > 0) {
         await userRef.update(dataToUpdate);
     } else {
@@ -55,6 +67,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "Perfil atualizado com sucesso." });
 
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return new NextResponse('Dados inválidos.', { status: 400 });
+    }
     console.error('[UPDATE_PROFILE_ERROR]', error);
     return new NextResponse('Erro interno do servidor.', { status: 500 });
   }

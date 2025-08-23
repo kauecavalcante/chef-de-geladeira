@@ -3,7 +3,14 @@ import OpenAI from 'openai';
 import * as admin from 'firebase-admin';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { z } from 'zod';
+import * as Sentry from "@sentry/nextjs"; 
 
+const GenerateRecipeSchema = z.object({
+  ingredients: z.string().min(3, { message: "Os ingredientes são obrigatórios." }),
+  styles: z.array(z.string()).optional(),
+  conflictResolution: z.string().optional(),
+});
 
 try {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
@@ -30,10 +37,10 @@ const isRecipeValid = (recipe: any): boolean => {
     typeof recipe.description === 'string' &&
     typeof recipe.servings === 'string' &&
     typeof recipe.time === 'string' &&
-    typeof recipe.difficulty === 'string' && 
+    typeof recipe.difficulty === 'string' &&
     Array.isArray(recipe.ingredients) &&
     Array.isArray(recipe.instructions) &&
-    Array.isArray(recipe.chefTips) 
+    Array.isArray(recipe.chefTips)
   );
 };
 
@@ -44,6 +51,16 @@ export async function POST(req: Request) {
     const idToken = authorizationHeader.split('Bearer ')[1];
     const { uid } = await auth.verifyIdToken(idToken);
 
+    const body = await req.json();
+
+    const validation = GenerateRecipeSchema.safeParse(body);
+
+    if (!validation.success) {
+      return new NextResponse(JSON.stringify({ message: "Dados inválidos.", errors: validation.error.errors }), { status: 400 });
+    }
+
+    const { ingredients, styles, conflictResolution } = validation.data;
+
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
 
@@ -52,9 +69,6 @@ export async function POST(req: Request) {
     }
 
     const userData = userDoc.data()!;
-    const body = await req.json();
-    const { ingredients, styles, conflictResolution } = body; 
-    
     const dietaryPreferences = userData.plan === 'premium' ? (userData.dietaryPreferences || []) : [];
 
     let preferencesText = '';
@@ -69,7 +83,7 @@ export async function POST(req: Request) {
       preferencesText = `Importante: A receita DEVE seguir estas restrições alimentares: ${dietaryPreferences.join(', ')}. Não inclua nenhum ingrediente que viole estas regras.`;
     }
     
-    const styleText = styles && styles.length > 0 
+    const styleText = styles && styles.length > 0
       ? `A receita deve ter os seguintes estilos: ${styles.join(', ')}.`
       : 'A receita pode ser de qualquer estilo, use sua criatividade.';
 
@@ -131,7 +145,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(recipeJson);
 
-  } catch (error) {
+  } catch (error: any) {
+   
+    Sentry.captureException(error);
+
+    if (error instanceof z.ZodError) {
+      return new NextResponse('Dados inválidos.', { status: 400 });
+    }
     console.error('[GENERATE_RECIPE_ERROR]', error);
     return new NextResponse('Erro interno do servidor.', { status: 500 });
   }

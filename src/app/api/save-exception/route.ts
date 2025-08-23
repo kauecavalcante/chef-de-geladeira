@@ -3,7 +3,14 @@ import * as admin from 'firebase-admin';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import OpenAI from 'openai';
+import { z } from 'zod'; 
 
+
+const SaveExceptionSchema = z.object({
+  preference: z.string().min(1),
+  ingredient: z.string().min(1),
+});
+// -----------------------------------------
 
 try {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
@@ -22,7 +29,6 @@ const auth = admin.auth();
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
 
 async function getNormalizedIngredient(ingredient: string): Promise<string> {
   try {
@@ -45,7 +51,6 @@ async function getNormalizedIngredient(ingredient: string): Promise<string> {
   }
 }
 
-
 export async function POST(req: Request) {
   try {
     const authorizationHeader = req.headers.get('Authorization');
@@ -53,15 +58,17 @@ export async function POST(req: Request) {
     const idToken = authorizationHeader.split('Bearer ')[1];
     const { uid } = await auth.verifyIdToken(idToken);
 
-    const { preference, ingredient } = await req.json();
-
-    if (!preference || !ingredient) {
-      return new NextResponse('Dados inválidos.', { status: 400 });
-    }
+    const body = await req.json();
 
     
+    const validation = SaveExceptionSchema.safeParse(body);
+    if (!validation.success) {
+      return new NextResponse(JSON.stringify({ message: "Dados inválidos.", errors: validation.error.errors }), { status: 400 });
+    }
+    const { preference, ingredient } = validation.data;
+    
+    
     const normalizedIngredient = await getNormalizedIngredient(ingredient);
-
     const userRef = db.collection('users').doc(uid);
     
     const fieldToUpdate = `ingredientExceptions.${preference}`;
@@ -74,6 +81,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "Exceção salva com sucesso." });
 
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return new NextResponse('Dados inválidos.', { status: 400 });
+    }
     console.error('[SAVE_EXCEPTION_ERROR]', error);
     return new NextResponse('Erro interno do servidor.', { status: 500 });
   }

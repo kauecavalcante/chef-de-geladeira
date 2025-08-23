@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChefHat, Sparkles, Zap } from 'lucide-react';
-import { Navbar } from '../components/Navbar/Navbar'; 
+import { Navbar } from '../components/Navbar/Navbar';
 import { IngredientInput } from '../components/IngredientInput/IngredientInput';
 import { TTag } from '@/types';
 import { useRecipeStore } from '../store/recipeStore';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
-
 import styles from './Home.module.css';
+import toast from 'react-hot-toast'; 
 
 const RECIPE_STYLES: TTag[] = [
   { key: 'rapida', name: 'Rápida' },
@@ -24,12 +24,12 @@ const RECIPE_STYLES: TTag[] = [
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  
+
   const [ingredients, setIngredients] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<TTag[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userPreferences, setUserPreferences] = useState<string[]>([]);
-  
+
   const setGeneratedRecipe = useRecipeStore((state) => state.setGeneratedRecipe);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function HomePage() {
 
   const proceedToGenerate = async (conflictResolution?: string) => {
     if (!user) {
-      alert("Você precisa estar logado para gerar uma receita.");
+      toast.error("Você precisa estar logado para gerar uma receita.");
       return;
     }
     setIsLoading(true);
@@ -73,7 +73,7 @@ export default function HomePage() {
       });
 
       if (response.status === 429) {
-        alert("Você atingiu seu limite de 10 receitas gratuitas para este mês.");
+        toast.error("Você atingiu seu limite de 10 receitas gratuitas para este mês.");
         setIsLoading(false);
         return;
       }
@@ -89,14 +89,15 @@ export default function HomePage() {
 
     } catch (error) {
       console.error(error);
-      alert(`Ocorreu um erro ao gerar a receita: ${error instanceof Error ? error.message : 'Tente novamente.'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Tente novamente.';
+      toast.error(`Ocorreu um erro ao gerar a receita: ${errorMessage}`);
       setIsLoading(false);
     }
   };
 
   const handleGenerateClick = async () => {
     if (!ingredients.trim()) {
-      alert("Por favor, insira alguns ingredientes.");
+      toast.error("Por favor, insira alguns ingredientes.");
       return;
     }
     if (!user) return;
@@ -133,7 +134,7 @@ export default function HomePage() {
         });
 
         conflictMessage += `\nO que gostaria de fazer?\n\nDigite o número da sua escolha:\n1. Considerar meus ingredientes como compatíveis (apenas desta vez).\n2. Sugerir alternativas para os ingredientes.\n3. Ignorar minhas preferências (apenas desta vez).\n4. Considerar meus ingredientes como compatíveis para sempre (ex: "leite" será sempre "leite sem lactose").`;
-        
+
         const choice = window.prompt(conflictMessage, "1");
 
         switch (choice) {
@@ -147,8 +148,8 @@ export default function HomePage() {
             proceedToGenerate('ignore_preference');
             break;
           case "4":
-            const savePromises = validationResult.conflicts.flatMap((conflict: any) => 
-              conflict.ingredients.map((ing: string) => 
+            const savePromises = validationResult.conflicts.flatMap((conflict: any) =>
+              conflict.ingredients.map((ing: string) =>
                 fetch('/api/save-exception', {
                   method: 'POST',
                   headers: {
@@ -163,7 +164,7 @@ export default function HomePage() {
               )
             );
             await Promise.all(savePromises);
-            alert("Suas exceções foram salvas! Da próxima vez, não perguntaremos sobre estes ingredientes. Gerando a receita...");
+            toast.success("Suas exceções foram salvas! Gerando a receita...");
             proceedToGenerate('assume_compliant');
             break;
           default:
@@ -174,7 +175,7 @@ export default function HomePage() {
       }
     } catch (error) {
       console.error("Erro na validação:", error);
-      alert("Ocorreu um erro ao verificar seus ingredientes. Tente novamente.");
+      toast.error("Ocorreu um erro ao verificar seus ingredientes. Tente novamente.");
       setIsLoading(false);
     }
   };
@@ -196,7 +197,7 @@ export default function HomePage() {
 
   return (
     <>
-      <Navbar /> 
+      <Navbar />
 
       <main className={styles.mainContainer}>
         <motion.div

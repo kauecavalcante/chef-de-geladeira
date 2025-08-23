@@ -9,8 +9,9 @@ import { collection, query, getDocs, orderBy, limit, doc, getDoc } from 'firebas
 import { useRecipeStore, Recipe } from '@/store/recipeStore';
 import { ChefHat, Clock, Loader2, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Navbar } from '@/components/Navbar/Navbar'; 
+import { Navbar } from '@/components/Navbar/Navbar';
 import styles from './History.module.css';
+import toast from 'react-hot-toast'; 
 
 type StoredRecipe = Recipe & {
   id: string;
@@ -21,7 +22,7 @@ type StoredRecipe = Recipe & {
 };
 
 const UpgradeToSeeMore = () => (
-  <motion.div 
+  <motion.div
     className={styles.upgradeCard}
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -89,7 +90,7 @@ export default function HistoryPage() {
           } else {
             q = query(recipesRef, orderBy('createdAt', 'desc'));
           }
-          
+
           const querySnapshot = await getDocs(q);
           const userRecipes = querySnapshot.docs.map(doc => ({
             id: doc.id,
@@ -99,7 +100,7 @@ export default function HistoryPage() {
           setRecipes(userRecipes);
         } catch (error) {
           console.error("Erro ao buscar dados:", error);
-          alert("Não foi possível carregar os seus dados.");
+          toast.error("Não foi possível carregar os seus dados.");
         } finally {
           setLoading(false);
         }
@@ -130,19 +131,19 @@ export default function HistoryPage() {
         <header className={styles.header}>
           <h1>Minhas Receitas</h1>
         </header>
-        
+
         <main>
           {recipes.length > 0 ? (
-            <motion.div 
+            <motion.div
               className={styles.grid}
               variants={containerVariants}
               initial="hidden"
               animate="visible"
             >
               {recipes.map((recipe) => (
-                <motion.div 
-                  key={recipe.id} 
-                  className={styles.card} 
+                <motion.div
+                  key={recipe.id}
+                  className={styles.card}
                   onClick={() => handleRecipeClick(recipe)}
                   variants={itemVariants}
                 >

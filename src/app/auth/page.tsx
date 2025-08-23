@@ -4,8 +4,8 @@ import { useState, FormEvent, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FcGoogle } from 'react-icons/fc';
-import { 
-  createUserWithEmailAndPassword, 
+import {
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
@@ -16,20 +16,19 @@ import {
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import { auth, db } from '@/firebase';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'; 
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import styles from './Auth.module.css';
+import toast from 'react-hot-toast'; 
 
 export default function AuthPage() {
   const [isLoginView, setIsLoginView] = useState(true);
   const [isForgotPasswordView, setIsForgotPasswordView] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
-  
+
   const router = useRouter();
   const { user } = useAuth();
 
@@ -53,7 +52,6 @@ export default function AuthPage() {
   const handleAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       if (isLoginView) {
@@ -64,21 +62,21 @@ export default function AuthPage() {
         if (freshUser && freshUser.emailVerified) {
           router.push('/');
         } else {
-          setError('Por favor, verifique seu e-mail antes de fazer o login.');
+          toast.error('Por favor, verifique seu e-mail antes de fazer o login.');
           await signOut(auth);
         }
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await createUserProfile(userCredential.user); 
+        await createUserProfile(userCredential.user);
         await sendEmailVerification(userCredential.user);
-        await signOut(auth); 
+        await signOut(auth);
         setShowVerificationMessage(true);
       }
     } catch (err) {
       if (err instanceof FirebaseError) {
-        setError(getFirebaseErrorMessage(err.code));
+        toast.error(getFirebaseErrorMessage(err.code));
       } else {
-        setError('Ocorreu um erro inesperado.');
+        toast.error('Ocorreu um erro inesperado.');
       }
     } finally {
       setLoading(false);
@@ -88,60 +86,57 @@ export default function AuthPage() {
   const handlePasswordReset = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!email) {
-      setError("Por favor, insira seu e-mail.");
+      toast.error("Por favor, insira seu e-mail.");
       return;
     }
     setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
     try {
       await sendPasswordResetEmail(auth, email);
-      setSuccessMessage("Se uma conta com este e-mail existir, um link para redefinir a senha foi enviado.");
+      toast.success("Se uma conta com este e-mail existir, um link para redefinir a senha foi enviado.");
     } catch (err) {
       if (err instanceof FirebaseError) {
-        setError(getFirebaseErrorMessage(err.code));
+        toast.error(getFirebaseErrorMessage(err.code));
       } else {
-        setError("Ocorreu um erro inesperado.");
+        toast.error("Ocorreu um erro inesperado.");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    setError(null);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      
+
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
 
-      
+
       if (!userDoc.exists()) {
-        await createUserProfile(user); 
+        await createUserProfile(user);
       }
-      
-      
+
+
       router.push('/');
 
     } catch (err) {
       if (err instanceof FirebaseError) {
-        setError(getFirebaseErrorMessage(err.code));
+        toast.error(getFirebaseErrorMessage(err.code));
       } else {
-        setError('Ocorreu um erro inesperado.');
+        toast.error('Ocorreu um erro inesperado.');
       }
     } finally {
       setLoading(false);
     }
   };
-  
+
   const getFirebaseErrorMessage = (errorCode: string): string => {
-    console.log("Firebase Error Code:", errorCode); 
+    console.log("Firebase Error Code:", errorCode);
     switch (errorCode) {
       case 'auth/invalid-email': return 'O formato do e-mail é inválido.';
       case 'auth/user-not-found':
@@ -161,24 +156,18 @@ export default function AuthPage() {
     setIsForgotPasswordView(true);
     setIsLoginView(false);
     setShowVerificationMessage(false);
-    setError(null);
-    setSuccessMessage(null);
   };
 
   const switchToLoginView = () => {
     setIsForgotPasswordView(false);
     setIsLoginView(true);
     setShowVerificationMessage(false);
-    setError(null);
-    setSuccessMessage(null);
   };
 
   const switchToRegisterView = () => {
     setIsForgotPasswordView(false);
     setIsLoginView(false);
     setShowVerificationMessage(false);
-    setError(null);
-    setSuccessMessage(null);
   }
 
   if (showVerificationMessage) {
@@ -203,9 +192,6 @@ export default function AuthPage() {
         <div className={styles.authBox}>
           <h1 className={styles.heading}>Redefinir Senha</h1>
           <p className={styles.subheading}>Insira seu e-mail para receber o link de redefinição.</p>
-          
-          {error && <p className={styles.errorText}>{error}</p>}
-          {successMessage && <p className={styles.successText}>{successMessage}</p>}
 
           <form onSubmit={handlePasswordReset} className={styles.form}>
             <div className={styles.inputGroup}>
@@ -232,8 +218,6 @@ export default function AuthPage() {
         </div>
         <h1 className={styles.heading}>{isLoginView ? 'Acesse sua conta' : 'Crie sua conta'}</h1>
         <p className={styles.subheading}>Bem-vindo(a) de volta!</p>
-
-        {error && <p className={styles.errorText}>{error}</p>}
 
         <form onSubmit={handleAuth} className={styles.form}>
           <div className={styles.inputGroup}>

@@ -8,7 +8,8 @@ import { db } from '@/firebase';
 import { doc, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Loader2, Crown, XCircle, AlertTriangle, Lock } from 'lucide-react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { Navbar } from '@/components/Navbar/Navbar'; 
+import { Navbar } from '@/components/Navbar/Navbar';
+import toast from 'react-hot-toast'; 
 import styles from './Account.module.css';
 
 const DIETARY_OPTIONS = ['Vegetariana', 'Sem Glúten', 'Sem Lactose', 'Keto', 'Vegana'];
@@ -20,7 +21,7 @@ const AccountTab = ({ user, initialName }: { user: any, initialName: string }) =
 
     const handleSaveProfile = async () => {
         if (!user || !displayName.trim()) {
-            alert("O nome não pode estar em branco.");
+            toast.error("O nome não pode estar em branco.");
             return;
         }
         setIsSaving(true);
@@ -28,16 +29,16 @@ const AccountTab = ({ user, initialName }: { user: any, initialName: string }) =
             const token = await user.getIdToken();
             await fetch('/api/update-profile', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ displayName })
             });
-            alert("Nome atualizado com sucesso!");
+            toast.success("Nome atualizado com sucesso!");
         } catch (error) {
             console.error("Erro ao atualizar perfil:", error);
-            alert("Não foi possível atualizar o seu nome.");
+            toast.error("Não foi possível atualizar o seu nome.");
         } finally {
             setIsSaving(false);
         }
@@ -48,9 +49,9 @@ const AccountTab = ({ user, initialName }: { user: any, initialName: string }) =
             <h2>Informações da Conta</h2>
             <div className={styles.formGroup}>
                 <label htmlFor="name">Nome</label>
-                <input 
-                    type="text" 
-                    id="name" 
+                <input
+                    type="text"
+                    id="name"
                     className={styles.input}
                     placeholder="Como gostaria de ser chamado?"
                     value={displayName}
@@ -59,12 +60,12 @@ const AccountTab = ({ user, initialName }: { user: any, initialName: string }) =
             </div>
             <div className={styles.formGroup}>
                 <label htmlFor="email">Email</label>
-                <input 
-                    type="email" 
-                    id="email" 
+                <input
+                    type="email"
+                    id="email"
                     className={styles.input}
                     value={user?.email || ''}
-                    disabled 
+                    disabled
                 />
             </div>
             <button onClick={handleSaveProfile} className={styles.saveButton} disabled={isSaving}>
@@ -80,7 +81,7 @@ const PreferencesTab = ({ user, initialPreferences, isPremium }: { user: any, in
     const [isSaving, setIsSaving] = useState(false);
 
     const handlePreferenceChange = (preference: string) => {
-        setPreferences(prev => 
+        setPreferences(prev =>
           prev.includes(preference)
             ? prev.filter(p => p !== preference)
             : [...prev, preference]
@@ -94,15 +95,15 @@ const PreferencesTab = ({ user, initialPreferences, isPremium }: { user: any, in
             const token = await user.getIdToken();
             await fetch('/api/update-profile', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ dietaryPreferences: preferences })
             });
-            alert("Preferências salvas com sucesso!");
+            toast.success("Preferências salvas com sucesso!");
         } catch (error) {
-            alert("Ocorreu um erro ao salvar as preferências.");
+            toast.error("Ocorreu um erro ao salvar as preferências.");
         } finally {
             setIsSaving(false);
         }
@@ -112,7 +113,7 @@ const PreferencesTab = ({ user, initialPreferences, isPremium }: { user: any, in
         <div className={styles.card}>
             <h2>Preferências Alimentares</h2>
             <p>Selecione as suas restrições para receber receitas personalizadas.</p>
-            
+
             {isPremium ? (
                 <>
                     <div className={styles.preferencesWrapper}>
@@ -165,7 +166,7 @@ const SubscriptionTab = ({ subscription, onManageSubscription, isManaging }: { s
     return (
         <div className={styles.card}>
             <h2>A Minha Assinatura</h2>
-            
+
             {!isPremium && status !== 'cancellation_pending' && (
                 <div className={styles.statusInactive}><XCircle size={20} /><span>Plano Gratuito</span></div>
             )}
@@ -182,9 +183,9 @@ const SubscriptionTab = ({ subscription, onManageSubscription, isManaging }: { s
                 {(isPremium && status === 'past_due') && 'Por favor, atualize os seus dados de pagamento para não perder o acesso ao plano Premium.'}
                 {!isPremium && status !== 'cancellation_pending' && 'Faça o upgrade para o plano Premium para ter acesso a receitas ilimitadas e funcionalidades exclusivas.'}
             </p>
-            
+
             {isPremium ? (
-                <button 
+                <button
                     className={styles.manageButton}
                     onClick={onManageSubscription}
                     disabled={isManaging}
@@ -201,7 +202,7 @@ const SubscriptionTab = ({ subscription, onManageSubscription, isManaging }: { s
 export default function AccountPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  
+
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('account');
@@ -243,7 +244,7 @@ export default function AccountPage() {
       if (!response.ok) throw new Error(data.message);
       if (data.portalUrl) window.location.href = data.portalUrl;
     } catch (error: any) {
-      alert(`Ocorreu um erro: ${error.message}`);
+      toast.error(`Ocorreu um erro: ${error.message}`);
     } finally {
       setIsManaging(false);
     }
@@ -252,10 +253,10 @@ export default function AccountPage() {
   if (loading || authLoading) {
     return <div className={styles.loadingScreen}><Loader2 className={styles.spinner} /></div>;
   }
-  
+
   return (
     <div className={styles.pageContainer}>
-      <Navbar /> 
+      <Navbar />
       <main className={styles.mainContent}>
         <h1 className={styles.pageTitle}>Minha Conta</h1>
         <div className={styles.tabs}>
@@ -263,7 +264,7 @@ export default function AccountPage() {
           <button onClick={() => setActiveTab('preferences')} className={`${styles.tabButton} ${activeTab === 'preferences' ? styles.activeTab : ''}`}>Preferências</button>
           <button onClick={() => setActiveTab('subscription')} className={`${styles.tabButton} ${activeTab === 'subscription' ? styles.activeTab : ''}`}>Assinatura</button>
         </div>
-        
+
         <div className={styles.tabContentContainer}>
           <AnimatePresence mode="wait">
             {activeTab === 'account' && user && (
