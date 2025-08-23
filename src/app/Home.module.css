@@ -6,20 +6,21 @@
   font-size: 1.25rem;
 }
 
-
 .header {
   display: flex;
   justify-content: space-between; 
   align-items: center;
-  gap: 1rem;
   padding: 1rem 2rem;
-  background-color: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
 }
 
 .userInfo {
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--text-secondary);
   display: none;
 }
 @media (min-width: 640px) {
@@ -34,93 +35,143 @@
   gap: 1rem;
 }
 
-.historyButton {
-  background-color: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  cursor: pointer;
+.navLink {
   font-weight: 500;
+  color: var(--text-secondary);
   text-decoration: none;
-  transition: background-color 0.2s;
+  transition: color 0.2s;
 }
-.historyButton:hover {
-  background-color: #e5e7eb;
+.navLink:hover {
+  color: var(--foreground);
 }
 
 .logoutButton {
   background: none;
-  border: 1px solid #d1d5db;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
+  border: none;
+  padding: 0;
+  font-weight: 500;
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: color 0.2s;
 }
-
 .logoutButton:hover {
-  background-color: #f9fafb;
+  color: var(--foreground);
 }
-
 
 .mainContainer {
-  display: flex;
-  justify-content: center;
-  padding: 2rem;
-  background-color: #f9fafb;
-  min-height: calc(100vh - 70px);
-}
-
-.contentWrapper {
-  width: 100%;
-  max-width: 700px;
-  display: flex;
-  flex-direction: column;
-  gap: 2.5rem;
-}
-
-.titleSection {
-  text-align: center;
-}
-
-.titleSection h1 {
-  font-size: 2.25rem; /* 36px */
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 0.5rem;
-}
-
-.titleSection p {
-  font-size: 1.125rem; /* 18px */
-  color: #4b5563;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.formSection {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.formSection label {
-  font-weight: 600;
-  color: #374151;
-}
-
-.loadingContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 300px;
+  padding: 2rem;
+  min-height: 100vh;
 }
 
-.shimmerText {
-  font-size: 1.5rem;
+.titleSection {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.logoWrapper {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.5rem;
+  border-radius: 50%;
+  background: linear-gradient(to bottom right, var(--primary-color), #E05D00);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(255, 105, 0, 0.25);
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  color: white;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  max-width: 450px;
+}
+
+.contentWrapper {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.styleTagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.styleTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--card-background);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.styleTag:hover {
+  border-color: #ccc;
+  color: var(--foreground);
+}
+
+.selectedTag {
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+  border-color: var(--primary-color);
+}
+
+.loadingContainer {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.loadingIcon {
+  animation: spin 1.5s linear infinite;
+  color: var(--primary-color);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loadingText {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.loadingSubtext {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }

@@ -3,19 +3,19 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #f9fafb;
   padding: 1rem;
+  background-color: transparent; 
 }
 
 .card {
-  background-color: #ffffff;
+  background-color: var(--card-background);
   border-radius: 1.5rem;
   padding: 3rem 2.5rem;
   max-width: 500px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
-  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+  border: 1px solid var(--border-color);
 }
 
 .iconWrapper {
@@ -23,26 +23,26 @@
 }
 
 .successIcon {
-  color: #16a34a; 
+  color: var(--primary-color); 
 }
 
 .title {
   font-size: 2rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--foreground);
   margin-bottom: 1rem;
 }
 
 .message {
-  color: #4b5563;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 2rem;
 }
 
 .ctaButton {
   width: 100%;
-  background-color: #111827;
-  color: #ffffff;
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
   border: none;
   padding: 0.875rem;
   border-radius: 0.75rem;
@@ -53,5 +53,5 @@
 }
 
 .ctaButton:hover {
-  background-color: #374151;
+  background-color: var(--primary-color-hover);
 }

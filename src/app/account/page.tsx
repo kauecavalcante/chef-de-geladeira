@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/firebase';
-import { doc, onSnapshot, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Loader2, Crown, XCircle, AlertTriangle, Lock } from 'lucide-react';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { Navbar } from '@/components/Navbar/Navbar'; 
 import styles from './Account.module.css';
 
 const DIETARY_OPTIONS = ['Vegetariana', 'Sem Glúten', 'Sem Lactose', 'Keto', 'Vegana'];
 
 
-
-// Informações da Conta
 const AccountTab = ({ user, initialName }: { user: any, initialName: string }) => {
     const [displayName, setDisplayName] = useState(initialName);
     const [isSaving, setIsSaving] = useState(false);
@@ -74,7 +74,7 @@ const AccountTab = ({ user, initialName }: { user: any, initialName: string }) =
     );
 };
 
-// Preferências Alimentares 
+
 const PreferencesTab = ({ user, initialPreferences, isPremium }: { user: any, initialPreferences: string[], isPremium: boolean }) => {
     const [preferences, setPreferences] = useState(initialPreferences);
     const [isSaving, setIsSaving] = useState(false);
@@ -149,7 +149,7 @@ const PreferencesTab = ({ user, initialPreferences, isPremium }: { user: any, in
     );
 };
 
-//  Assinatura
+
 const SubscriptionTab = ({ subscription, onManageSubscription, isManaging }: { subscription: any, onManageSubscription: () => void, isManaging: boolean }) => {
     const isPremium = subscription?.plan === 'premium';
     const status = subscription?.subscription_status;
@@ -207,6 +207,12 @@ export default function AccountPage() {
   const [activeTab, setActiveTab] = useState('account');
   const [isManaging, setIsManaging] = useState(false);
 
+  const tabContentVariants: Variants = {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -10 },
+  };
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -244,35 +250,62 @@ export default function AccountPage() {
   };
 
   if (loading || authLoading) {
-    return <div className={styles.loadingScreen}>A carregar...</div>;
+    return <div className={styles.loadingScreen}><Loader2 className={styles.spinner} /></div>;
   }
   
   return (
     <div className={styles.pageContainer}>
-      <header className={styles.header}>
-        <Link href="/" className={styles.backButton}>&larr; Voltar</Link>
-        <h1>Profile & Settings</h1>
-      </header>
+      <Navbar /> 
       <main className={styles.mainContent}>
-        
+        <h1 className={styles.pageTitle}>Minha Conta</h1>
         <div className={styles.tabs}>
           <button onClick={() => setActiveTab('account')} className={`${styles.tabButton} ${activeTab === 'account' ? styles.activeTab : ''}`}>Conta</button>
           <button onClick={() => setActiveTab('preferences')} className={`${styles.tabButton} ${activeTab === 'preferences' ? styles.activeTab : ''}`}>Preferências</button>
           <button onClick={() => setActiveTab('subscription')} className={`${styles.tabButton} ${activeTab === 'subscription' ? styles.activeTab : ''}`}>Assinatura</button>
         </div>
+        
+        <div className={styles.tabContentContainer}>
+          <AnimatePresence mode="wait">
+            {activeTab === 'account' && user && (
+              <motion.div
+                key="account"
+                variants={tabContentVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+              >
+                <AccountTab user={user} initialName={subscription?.displayName || user?.displayName || ''} />
+              </motion.div>
+            )}
 
-        {activeTab === 'account' && user && (
-          <AccountTab user={user} initialName={subscription?.displayName || user?.displayName || ''} />
-        )}
+            {activeTab === 'preferences' && user && (
+              <motion.div
+                key="preferences"
+                variants={tabContentVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+              >
+                <PreferencesTab user={user} initialPreferences={subscription?.dietaryPreferences || []} isPremium={subscription?.plan === 'premium'} />
+              </motion.div>
+            )}
 
-        {activeTab === 'preferences' && user && (
-           <PreferencesTab user={user} initialPreferences={subscription?.dietaryPreferences || []} isPremium={subscription?.plan === 'premium'} />
-        )}
-
-        {activeTab === 'subscription' && (
-          <SubscriptionTab subscription={subscription} onManageSubscription={handleManageSubscription} isManaging={isManaging} />
-        )}
-
+            {activeTab === 'subscription' && (
+              <motion.div
+                key="subscription"
+                variants={tabContentVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+              >
+                <SubscriptionTab subscription={subscription} onManageSubscription={handleManageSubscription} isManaging={isManaging} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </main>
     </div>
   );

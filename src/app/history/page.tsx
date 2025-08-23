@@ -7,7 +7,9 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/firebase';
 import { collection, query, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { useRecipeStore, Recipe } from '@/store/recipeStore';
-import { ArrowLeft, ChefHat, Clock, Loader2, Zap } from 'lucide-react';
+import { ChefHat, Clock, Loader2, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Navbar } from '@/components/Navbar/Navbar'; 
 import styles from './History.module.css';
 
 type StoredRecipe = Recipe & {
@@ -18,9 +20,13 @@ type StoredRecipe = Recipe & {
   };
 };
 
-
 const UpgradeToSeeMore = () => (
-  <div className={styles.upgradeCard}>
+  <motion.div 
+    className={styles.upgradeCard}
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.5 }}
+  >
     <div className={styles.upgradeIcon}>
       <Zap size={32} />
     </div>
@@ -31,7 +37,7 @@ const UpgradeToSeeMore = () => (
     <Link href="/pricing" className={styles.upgradeButton}>
       Ver Planos
     </Link>
-  </div>
+  </motion.div>
 );
 
 export default function HistoryPage() {
@@ -42,6 +48,24 @@ export default function HistoryPage() {
   const [recipes, setRecipes] = useState<StoredRecipe[]>([]);
   const [userPlan, setUserPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+    },
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -57,15 +81,12 @@ export default function HistoryPage() {
           const plan = userDoc.exists() ? userDoc.data().plan : 'free';
           setUserPlan(plan);
 
-          
           const recipesRef = collection(db, 'users', user.uid, 'recipes');
           let q;
 
           if (plan === 'free') {
-            // Se for gratuito, busca as 3 últimas
             q = query(recipesRef, orderBy('createdAt', 'desc'), limit(3));
           } else {
-            // Se for premium, busca todas
             q = query(recipesRef, orderBy('createdAt', 'desc'));
           }
           
@@ -103,43 +124,51 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className={styles.pageContainer}>
-      <header className={styles.header}>
-        <Link href="/" className={styles.backButton}>
-          <ArrowLeft size={18} />
-          Voltar
-        </Link>
-        <h1>Minhas Receitas</h1>
-      </header>
-      
-      <main>
-        {recipes.length > 0 ? (
-          <div className={styles.grid}>
-            {recipes.map((recipe) => (
-              <div key={recipe.id} className={styles.card} onClick={() => handleRecipeClick(recipe)}>
-                <div className={styles.cardIcon}>
-                  <ChefHat size={32} strokeWidth={1.5} />
-                </div>
-                <h2 className={styles.cardTitle}>{recipe.title}</h2>
-                <p className={styles.cardDescription}>{recipe.description}</p>
-                <div className={styles.cardFooter}>
-                  <Clock size={16} />
-                  <span>{recipe.time}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.emptyState}>
-            <ChefHat size={48} strokeWidth={1} />
-            <h2>Nenhuma receita encontrada</h2>
-            <p>Parece que ainda não gerou nenhuma receita. Volte à página inicial para começar!</p>
-          </div>
-        )}
+    <>
+      <Navbar />
+      <div className={styles.pageContainer}>
+        <header className={styles.header}>
+          <h1>Minhas Receitas</h1>
+        </header>
+        
+        <main>
+          {recipes.length > 0 ? (
+            <motion.div 
+              className={styles.grid}
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {recipes.map((recipe) => (
+                <motion.div 
+                  key={recipe.id} 
+                  className={styles.card} 
+                  onClick={() => handleRecipeClick(recipe)}
+                  variants={itemVariants}
+                >
+                  <div className={styles.cardIcon}>
+                    <ChefHat size={32} strokeWidth={1.5} />
+                  </div>
+                  <h2 className={styles.cardTitle}>{recipe.title}</h2>
+                  <p className={styles.cardDescription}>{recipe.description}</p>
+                  <div className={styles.cardFooter}>
+                    <Clock size={16} />
+                    <span>{recipe.time}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <div className={styles.emptyState}>
+              <ChefHat size={48} strokeWidth={1} />
+              <h2>Nenhuma receita encontrada</h2>
+              <p>Parece que ainda não gerou nenhuma receita. Volte à página inicial para começar!</p>
+            </div>
+          )}
 
-        {/* Mostra o "convite" de upgrade se for utilizador gratuito */}
-        {userPlan === 'free' && recipes.length > 0 && <UpgradeToSeeMore />}
-      </main>
-    </div>
+          {userPlan === 'free' && recipes.length > 0 && <UpgradeToSeeMore />}
+        </main>
+      </div>
+    </>
   );
 }

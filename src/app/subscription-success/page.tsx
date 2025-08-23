@@ -2,14 +2,33 @@
 
 import { useRouter } from 'next/navigation';
 import { CheckCircle2 } from 'lucide-react';
+import { motion, Variants } from 'framer-motion'; 
 import styles from './Success.module.css';
 
 export default function SubscriptionSuccessPage() {
   const router = useRouter();
 
+  
+  const cardVariants: Variants = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.4,
+        ease: 'easeOut',
+      },
+    },
+  };
+
   return (
     <div className={styles.pageContainer}>
-      <div className={styles.card}>
+      <motion.div 
+        className={styles.card}
+        variants={cardVariants}
+        initial="hidden"
+        animate="visible"
+      >
         <div className={styles.iconWrapper}>
           <CheckCircle2 size={64} className={styles.successIcon} />
         </div>
@@ -23,7 +42,7 @@ export default function SubscriptionSuccessPage() {
         >
           Começar a cozinhar
         </button>
-      </div>
+      </motion.div>
     </div>
   );
 }

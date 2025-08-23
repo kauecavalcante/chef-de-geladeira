@@ -1,19 +1,45 @@
 .container {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem; /* 8px */
+  position: relative;
   width: 100%;
-  padding: 0.5rem; /* 8px */
-  border-radius: 1rem; /* 16px */
-  border: 1px solid #d1d5db;
-  background-color: transparent;
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.container:focus-within {
-  outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+.inputWrapper {
+  position: relative;
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  background-color: var(--card-background);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s;
+}
+
+.inputWrapper:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 20%, transparent), 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.iconWrapper {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(to bottom right, var(--primary-color), #E05D00);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  color: white;
 }
 
 .textarea {
@@ -23,8 +49,8 @@
   resize: none;
   font-size: 1rem;
   line-height: 1.5;
-  padding: 0.5rem; /* 8px */
-  color: #111827;
+  color: var(--foreground);
+  min-height: 24px;
 }
 
 .textarea:focus {
@@ -32,7 +58,7 @@
 }
 
 .textarea::placeholder {
-  color: #9ca3af;
+  color: var(--text-secondary);
 }
 
 .submitButton {
@@ -40,22 +66,48 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9999px; /* circle */
-  background-color: #111827;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--button-dark-bg);
   color: #ffffff;
-  border: 1px solid #d1d5db;
+  border: none;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  margin-top: 0.25rem;
 }
 
 .submitButton:hover:not(:disabled) {
-  background-color: #374151;
+  background-color: var(--button-dark-hover-bg);
+  transform: scale(1.1);
 }
 
 .submitButton:disabled {
   background-color: #e5e7eb;
   color: #9ca3af;
   cursor: not-allowed;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+}
+
+.tagsContainer {
+  padding: 0 1rem 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.selectedTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background-color: var(--primary-color-light);
+  color: var(--primary-color-dark-text);
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }

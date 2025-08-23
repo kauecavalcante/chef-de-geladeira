@@ -5,24 +5,18 @@
   height: 100vh;
 }
 
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .pageContainer {
-  background-color: #f9fafb;
   min-height: 100vh;
-}
-
-.header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #ffffff;
-}
-
-.backButton {
-  color: #4b5563;
-  text-decoration: none;
-  font-weight: 500;
-}
-.backButton:hover {
-  color: #111827;
+  padding-top: 100px; 
 }
 
 .mainContent {
@@ -45,11 +39,12 @@
 .titleSection h1 {
   font-size: 2.25rem;
   font-weight: 700;
+  color: var(--foreground);
 }
 
 .titleSection p {
   font-size: 1.125rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-top: 0.5rem;
 }
 
@@ -67,17 +62,18 @@
 }
 
 .planCard {
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
   border-radius: 1rem;
   padding: 2rem;
   display: flex;
   flex-direction: column;
   position: relative;
+  transition: all 0.2s ease-in-out;
 }
 
 .premiumPlan {
-  border: 2px solid #4f46e5;
+  border: 2px solid var(--primary-color);
   transform: scale(1.02);
 }
 
@@ -86,8 +82,8 @@
   top: -14px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #4f46e5;
-  color: #ffffff;
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.875rem;
@@ -97,23 +93,25 @@
 .planCard h2 {
   font-size: 1.5rem;
   font-weight: 600;
+  color: var(--foreground);
 }
 
 .price {
   font-size: 2.5rem;
   font-weight: 700;
   margin-top: 1rem;
+  color: var(--foreground);
 }
 
 .period {
   font-size: 1rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-left: 0.25rem;
 }
 
 .description {
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-top: 0.5rem;
   min-height: 40px;
 }
@@ -132,10 +130,11 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  color: var(--foreground);
 }
 
 .featuresList li svg {
-  color: #16a34a;
+  color: var(--primary-color);
   flex-shrink: 0;
 }
 
@@ -146,24 +145,26 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
-  border: 1px solid #d1d5db;
-  background-color: #f9fafb;
+  border: 1px solid var(--border-color);
+  background-color: var(--tab-background);
+  color: var(--text-secondary);
 }
 
 .ctaButton:disabled {
   background-color: #e5e7eb;
   color: #9ca3af;
   cursor: not-allowed;
+  border-color: #e5e7eb;
 }
 
 .premiumButton {
-  background-color: #111827;
-  color: #ffffff;
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
   border: none;
 }
 
 .premiumButton:not(:disabled):hover {
-  background-color: #374151;
+  background-color: var(--primary-color-hover);
 }
 
 .premiumActive {
@@ -175,17 +176,7 @@
   padding: 0.75rem;
   border-radius: 0.5rem;
   font-weight: 600;
-  background-color: #e0e7ff;
-  color: #3730a3;
-  border: 1px solid #c7d2fe;
-}
-
-.spinner {
-  margin: 0 auto;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  background-color: var(--primary-color-light);
+  color: var(--primary-color-dark-text);
+  border: 1px solid var(--primary-color);
 }

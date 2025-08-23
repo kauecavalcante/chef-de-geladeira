@@ -1,16 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
-
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChefHat, Sparkles, Zap } from 'lucide-react';
+import { Navbar } from '../components/Navbar/Navbar'; 
 import { IngredientInput } from '../components/IngredientInput/IngredientInput';
-import { StyleTags, TTag } from '../components/StyleTags/StyleTags';
+import { TTag } from '@/types';
 import { useRecipeStore } from '../store/recipeStore';
-import { TextShimmer } from '../components/ui/TextShimmer/TextShimmer';
+import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 import styles from './Home.module.css';
 
@@ -19,50 +19,31 @@ const RECIPE_STYLES: TTag[] = [
   { key: 'facil', name: 'Fácil' },
   { key: 'saudavel', name: 'Saudável' },
   { key: 'economica', name: 'Econômica' },
-  { key: 'surpreenda-me', name: 'Surpreenda-me!' },
 ];
 
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   
   const [ingredients, setIngredients] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<TTag[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(true);
+  const [userPreferences, setUserPreferences] = useState<string[]>([]);
   
   const setGeneratedRecipe = useRecipeStore((state) => state.setGeneratedRecipe);
 
-
   useEffect(() => {
-    const paymentId = searchParams.get('payment_id');
-    const status = searchParams.get('status');
-
-    if (paymentId && status === 'approved' && user) {
-      const verify = async () => {
-        try {
-          const token = await user.getIdToken();
-          await fetch('/api/verify-subscription', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({ paymentId }),
-          });
-          router.replace('/'); 
-        } catch (error) {
-          console.error("Erro ao verificar a subscrição:", error);
-        } finally {
-          setIsVerifying(false);
+    if (user) {
+      const fetchPreferences = async () => {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists() && userDoc.data().dietaryPreferences) {
+          setUserPreferences(userDoc.data().dietaryPreferences);
         }
       };
-      verify();
-    } else {
-      setIsVerifying(false);
+      fetchPreferences();
     }
-  }, [searchParams, user, router]);
+  }, [user]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -70,27 +51,12 @@ export default function HomePage() {
     }
   }, [user, authLoading, router]);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push('/auth');
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!ingredients.trim()) {
-        alert("Por favor, insira alguns ingredientes.");
-        return;
-    }
+  const proceedToGenerate = async (conflictResolution?: string) => {
     if (!user) {
-        alert("Você precisa estar logado para gerar uma receita.");
-        return;
+      alert("Você precisa estar logado para gerar uma receita.");
+      return;
     }
-
     setIsLoading(true);
-
     try {
       const token = await user.getIdToken();
       const response = await fetch('/api/generate-recipe', {
@@ -102,6 +68,7 @@ export default function HomePage() {
         body: JSON.stringify({
           ingredients: ingredients,
           styles: selectedStyles.map(s => s.name),
+          conflictResolution: conflictResolution,
         }),
       });
 
@@ -112,7 +79,8 @@ export default function HomePage() {
       }
 
       if (!response.ok) {
-        throw new Error('Falha ao gerar a receita.');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Falha ao gerar a receita.');
       }
 
       const recipe = await response.json();
@@ -121,62 +89,175 @@ export default function HomePage() {
 
     } catch (error) {
       console.error(error);
-      alert("Ocorreu um erro ao gerar a receita. Tente novamente.");
+      alert(`Ocorreu um erro ao gerar a receita: ${error instanceof Error ? error.message : 'Tente novamente.'}`);
       setIsLoading(false);
     }
   };
 
-  if (authLoading || !user || isVerifying) {
+  const handleGenerateClick = async () => {
+    if (!ingredients.trim()) {
+      alert("Por favor, insira alguns ingredientes.");
+      return;
+    }
+    if (!user) return;
+
+    setIsLoading(true);
+
+    try {
+      const token = await user.getIdToken();
+      const validationResponse = await fetch('/api/validate-ingredients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ingredients: ingredients,
+          preferences: userPreferences,
+        }),
+      });
+
+      if (!validationResponse.ok) {
+        throw new Error('Falha ao validar ingredientes.');
+      }
+
+      const validationResult = await validationResponse.json();
+
+      if (validationResult.conflict && validationResult.conflicts.length > 0) {
+        setIsLoading(false);
+
+        let conflictMessage = 'Detectamos alguns conflitos:\n\n';
+        validationResult.conflicts.forEach((conflict: { preference: string; ingredients: string[] }) => {
+          const ingredientsList = conflict.ingredients.join(', ');
+          conflictMessage += `- Sua preferência "${conflict.preference}" é violada por: "${ingredientsList}".\n`;
+        });
+
+        conflictMessage += `\nO que gostaria de fazer?\n\nDigite o número da sua escolha:\n1. Considerar meus ingredientes como compatíveis (apenas desta vez).\n2. Sugerir alternativas para os ingredientes.\n3. Ignorar minhas preferências (apenas desta vez).\n4. Considerar meus ingredientes como compatíveis para sempre (ex: "leite" será sempre "leite sem lactose").`;
+        
+        const choice = window.prompt(conflictMessage, "1");
+
+        switch (choice) {
+          case "1":
+            proceedToGenerate('assume_compliant');
+            break;
+          case "2":
+            proceedToGenerate('suggest_alternatives');
+            break;
+          case "3":
+            proceedToGenerate('ignore_preference');
+            break;
+          case "4":
+            const savePromises = validationResult.conflicts.flatMap((conflict: any) => 
+              conflict.ingredients.map((ing: string) => 
+                fetch('/api/save-exception', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    preference: conflict.preference,
+                    ingredient: ing.toLowerCase(),
+                  }),
+                })
+              )
+            );
+            await Promise.all(savePromises);
+            alert("Suas exceções foram salvas! Da próxima vez, não perguntaremos sobre estes ingredientes. Gerando a receita...");
+            proceedToGenerate('assume_compliant');
+            break;
+          default:
+            return;
+        }
+      } else {
+        proceedToGenerate();
+      }
+    } catch (error) {
+      console.error("Erro na validação:", error);
+      alert("Ocorreu um erro ao verificar seus ingredientes. Tente novamente.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleStyleSelect = (tag: TTag) => {
+    setSelectedStyles(prev => {
+      const isSelected = prev.some(s => s.key === tag.key);
+      if (isSelected) {
+        return prev.filter(s => s.key !== tag.key);
+      } else {
+        return [...prev, tag];
+      }
+    });
+  };
+
+  if (authLoading || !user) {
     return <div className={styles.loadingScreen}>A carregar...</div>;
   }
 
   return (
     <>
-      <header className={styles.header}>
-        <p className={styles.userInfo}>Logado como: {user.email}</p>
-        <div className={styles.headerActions}>
-          <Link href="/account" className={styles.historyButton}>A Minha Conta</Link>
-          <Link href="/history" className={styles.historyButton}>Minhas Receitas</Link>
-          <button onClick={handleLogout} className={styles.logoutButton}>Sair</button>
-        </div>
-      </header>
+      <Navbar /> 
 
       <main className={styles.mainContainer}>
-        <div className={styles.contentWrapper}>
-          <div className={styles.titleSection}>
-            <h1>O que tem na sua geladeira?</h1>
-            <p>Transforme ingredientes em pratos incríveis em segundos.</p>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={styles.titleSection}
+        >
+          <div className={styles.logoWrapper}>
+            <ChefHat className={styles.logoIcon} />
+          </div>
+          <h1 className={styles.title}>Chef de Geladeira</h1>
+          <p className={styles.subtitle}>
+            Transforme o que você tem em pratos incríveis com o poder da IA.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className={styles.contentWrapper}
+        >
+          <IngredientInput
+            value={ingredients}
+            onChange={(e) => setIngredients(e.target.value)}
+            onSubmit={handleGenerateClick}
+            loading={isLoading}
+            placeholder="O que você tem para cozinhar hoje?"
+            selectedTags={selectedStyles}
+          />
+
+          <div className={styles.styleTagsContainer}>
+            {RECIPE_STYLES.map((tag) => (
+              <button
+                key={tag.key}
+                onClick={() => handleStyleSelect(tag)}
+                className={`${styles.styleTag} ${selectedStyles.some(s => s.key === tag.key) ? styles.selectedTag : ''}`}
+              >
+                <Zap size={14} />
+                {tag.name}
+              </button>
+            ))}
           </div>
 
-          {isLoading ? (
-            <div className={styles.loadingContainer}>
-              <TextShimmer className={styles.shimmerText}>
-                Criando sua receita... 🥪
-              </TextShimmer>
-            </div>
-          ) : (
-            <div className={styles.form}>
-              <div className={styles.formSection}>
-                <label htmlFor="ingredients">Digite os ingredientes que você tem:</label>
-                <IngredientInput
-                  value={ingredients}
-                  onChange={(e) => setIngredients(e.target.value)}
-                  onSubmit={handleSubmit}
-                  loading={isLoading}
-                  placeholder="Ex: frango, 2 ovos, um pouco de arroz, tomate, cebola..."
-                />
-              </div>
-
-              <div className={styles.formSection}>
-                <label>Qual o estilo da receita que você quer?</label>
-                <StyleTags
-                  availableTags={RECIPE_STYLES}
-                  onChange={(selected) => setSelectedStyles(selected)}
-                />
-              </div>
-            </div>
-          )}
-        </div>
+          <AnimatePresence>
+            {isLoading && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className={styles.loadingContainer}
+              >
+                <Sparkles className={styles.loadingIcon} />
+                <div>
+                  <p className={styles.loadingText}>O Chef IA está a pensar...</p>
+                  <p className={styles.loadingSubtext}>A analisar os seus ingredientes para criar a receita perfeita.</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </main>
     </>
   );

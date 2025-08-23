@@ -5,7 +5,6 @@ import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 
-
 try {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
   if (!getApps().length) {
@@ -17,7 +16,6 @@ try {
   console.error('FIREBASE ADMIN SDK ERROR:', error);
 }
 
-
 const db = getFirestore();
 const auth = admin.auth();
 
@@ -25,6 +23,19 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const isRecipeValid = (recipe: any): boolean => {
+  return (
+    recipe &&
+    typeof recipe.title === 'string' &&
+    typeof recipe.description === 'string' &&
+    typeof recipe.servings === 'string' &&
+    typeof recipe.time === 'string' &&
+    typeof recipe.difficulty === 'string' && 
+    Array.isArray(recipe.ingredients) &&
+    Array.isArray(recipe.instructions) &&
+    Array.isArray(recipe.chefTips) 
+  );
+};
 
 export async function POST(req: Request) {
   try {
@@ -41,25 +52,52 @@ export async function POST(req: Request) {
     }
 
     const userData = userDoc.data()!;
-
     const body = await req.json();
-    const { ingredients, styles } = body;
-
+    const { ingredients, styles, conflictResolution } = body; 
     
-    const dietaryPreferences = userData.dietaryPreferences || [];
+    const dietaryPreferences = userData.plan === 'premium' ? (userData.dietaryPreferences || []) : [];
 
-   
-    const preferencesText = dietaryPreferences.length > 0 
-      ? `Importante: A receita DEVE seguir estas restrições alimentares: ${dietaryPreferences.join(', ')}. Não inclua nenhum ingrediente que viole estas regras.`
-      : '';
+    let preferencesText = '';
+
+    if (conflictResolution === 'suggest_alternatives' && userData.plan === 'premium') {
+      preferencesText = `Importante: O usuário selecionou a preferência "${dietaryPreferences.join(', ')}", mas forneceu ingredientes que podem violar essa regra. Sua tarefa é criar a receita usando os ingredientes fornecidos, mas SUBSTITUINDO os itens problemáticos por alternativas adequadas (ex: substituir 'leite' por 'leite de amêndoas'). Mencione a substituição na lista de ingredientes.`;
+    } else if (conflictResolution === 'ignore_preference') {
+      preferencesText = 'Atenção: Ignore as preferências alimentares do usuário para esta receita específica e use os ingredientes exatamente como fornecidos.';
+    } else if (conflictResolution === 'assume_compliant' && userData.plan === 'premium') {
+      preferencesText = `Importante: A receita DEVE seguir estas restrições alimentares: ${dietaryPreferences.join(', ')}. O usuário informou que os ingredientes fornecidos (como 'leite' ou 'pão') já são da versão compatível (ex: 'leite sem lactose', 'pão sem glúten'). Portanto, use-os na receita mantendo a restrição.`;
+    } else if (dietaryPreferences.length > 0 && userData.plan === 'premium') {
+      preferencesText = `Importante: A receita DEVE seguir estas restrições alimentares: ${dietaryPreferences.join(', ')}. Não inclua nenhum ingrediente que viole estas regras.`;
+    }
     
-
     const styleText = styles && styles.length > 0 
       ? `A receita deve ter os seguintes estilos: ${styles.join(', ')}.`
       : 'A receita pode ser de qualquer estilo, use sua criatividade.';
 
    
-    const prompt = `Aja como um chef de cozinha criativo e experiente. Sua tarefa é criar uma receita deliciosa e clara usando os ingredientes fornecidos. Ingredientes disponíveis: ${ingredients}. ${styleText} ${preferencesText} Por favor, retorne a receita estritamente no seguinte formato JSON, sem nenhum texto ou explicação adicional antes ou depois do JSON... (o resto do seu prompt continua igual)`;
+    const prompt = `
+      Aja como um chef de cozinha especialista. Sua missão é criar uma receita completa e profissional.
+
+      **Contexto:**
+      - Ingredientes disponíveis: "${ingredients}".
+      - Estilos desejados: "${styleText}".
+      - Restrições a seguir: "${preferencesText}".
+
+      **Formato de Saída OBRIGATÓRIO:**
+      Responda APENAS com um objeto JSON. As chaves "ingredients", "instructions" e "chefTips" DEVEM ser arrays de strings.
+      A chave "difficulty" deve ser "Fácil", "Médio" ou "Difícil".
+      
+      O formato exato deve ser:
+      {
+        "title": "...",
+        "description": "...",
+        "servings": "...",
+        "time": "...",
+        "difficulty": "...",
+        "ingredients": ["...", "..."],
+        "instructions": ["...", "..."],
+        "chefTips": ["...", "..."]
+      }
+    `;
     
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -67,14 +105,19 @@ export async function POST(req: Request) {
       response_format: { type: 'json_object' },
     });
 
-    const recipeContent = response.choices[0].message?.content;
+    const recipeContent = response.choices[0].message.content;
     if (!recipeContent) {
-      return new NextResponse('Não foi possível gerar a receita.', { status: 500 });
+      return new NextResponse('A IA não conseguiu gerar uma receita.', { status: 500 });
     }
 
     const recipeJson = JSON.parse(recipeContent);
 
-     const recipeToSave = {
+    if (!isRecipeValid(recipeJson)) {
+      console.error('Resposta inválida da IA:', recipeContent);
+      return new NextResponse('A resposta da IA está incompleta. Por favor, tente novamente.', { status: 500 });
+    }
+
+    const recipeToSave = {
       ...recipeJson,
       createdAt: FieldValue.serverTimestamp(),
     };

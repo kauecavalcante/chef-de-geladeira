@@ -18,17 +18,17 @@
 .step:not(:last-child)::before {
   content: '';
   position: absolute;
-  left: 12px; 
+  left: 11px; 
   top: 36px;
   height: calc(100% - 24px);
   width: 2px;
-  background-color: #e5e7eb; 
+  background-color: var(--border-color); 
 }
 
 .iconContainer {
   flex-shrink: 0;
   z-index: 1; 
-  background-color: #ffffff; 
+  background-color: var(--card-background); 
 }
 
 .text {
@@ -39,11 +39,11 @@
 
 
 .completed .iconContainer {
-  color: #16a34a; 
+  color: var(--primary-color); 
 }
 .completed .text {
   text-decoration: line-through;
-  color: #6b7280; 
+  color: var(--text-secondary); 
 }
 
 
@@ -51,17 +51,17 @@
   cursor: pointer;
 }
 .current .iconContainer {
-  color: #2563eb; 
+  color: var(--primary-color); 
 }
 .current .text {
   font-weight: 600;
-  color: #111827; 
+  color: var(--foreground); 
 }
 
 
 .pending .iconContainer {
-  color: #d1d5db; 
+  color: var(--border-color); 
 }
 .pending .text {
-  color: #6b7280; 
+  color: var(--text-secondary); 
 }

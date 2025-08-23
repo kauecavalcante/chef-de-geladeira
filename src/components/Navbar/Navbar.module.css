@@ -1,0 +1,145 @@
+.header {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 50;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: var(--foreground);
+}
+
+.logoIconWrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(to bottom right, var(--primary-color), #E05D00);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoIcon {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.desktopNav {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .desktopNav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+}
+
+.navLink {
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.navLink:hover {
+  color: var(--foreground);
+}
+
+.logoutButton {
+  background: none;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.logoutButton:hover {
+  color: var(--foreground);
+  border-color: #ccc;
+}
+
+.mobileMenuButton {
+  display: block;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--foreground);
+}
+
+@media (min-width: 768px) {
+  .mobileMenuButton {
+    display: none;
+  }
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 90;
+}
+
+.mobileNav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 80%;
+  max-width: 300px;
+  background-color: var(--card-background);
+  z-index: 100;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileNavHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+}
+
+.mobileNavHeader button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--foreground);
+}
+
+.mobileNavLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.mobileNavLinks .navLink {
+  font-size: 1.125rem;
+}
+
+.mobileNavLinks .logoutButton {
+  width: fit-content;
+  margin-top: 1rem;
+}
