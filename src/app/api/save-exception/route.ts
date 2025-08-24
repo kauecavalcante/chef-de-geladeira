@@ -3,14 +3,13 @@ import * as admin from 'firebase-admin';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import OpenAI from 'openai';
-import { z } from 'zod'; 
-
+import { z } from 'zod';
+import * as Sentry from "@sentry/nextjs"; 
 
 const SaveExceptionSchema = z.object({
   preference: z.string().min(1),
   ingredient: z.string().min(1),
 });
-// -----------------------------------------
 
 try {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
@@ -60,13 +59,11 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    
     const validation = SaveExceptionSchema.safeParse(body);
     if (!validation.success) {
       return new NextResponse(JSON.stringify({ message: "Dados inválidos.", errors: validation.error.errors }), { status: 400 });
     }
     const { preference, ingredient } = validation.data;
-    
     
     const normalizedIngredient = await getNormalizedIngredient(ingredient);
     const userRef = db.collection('users').doc(uid);
@@ -81,6 +78,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "Exceção salva com sucesso." });
 
   } catch (error: any) {
+    Sentry.captureException(error); 
     if (error instanceof z.ZodError) {
       return new NextResponse('Dados inválidos.', { status: 400 });
     }

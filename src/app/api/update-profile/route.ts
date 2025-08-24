@@ -2,14 +2,13 @@ import { NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { z } from 'zod'; 
-
+import { z } from 'zod';
+import * as Sentry from "@sentry/nextjs"; 
 
 const UpdateProfileSchema = z.object({
   displayName: z.string().trim().min(1, "O nome não pode estar em branco.").optional(),
   dietaryPreferences: z.array(z.string()).optional(),
-}).strict(); 
-
+}).strict();
 
 try {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
@@ -36,7 +35,6 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    
     const validation = UpdateProfileSchema.safeParse(body);
 
     if (!validation.success) {
@@ -44,7 +42,6 @@ export async function POST(req: Request) {
     }
     
     const { displayName, dietaryPreferences } = validation.data;
-    
 
     const userRef = db.collection('users').doc(uid);
     const dataToUpdate: { [key: string]: any } = {};
@@ -52,7 +49,7 @@ export async function POST(req: Request) {
     if (typeof displayName === 'string') {
         dataToUpdate.displayName = displayName;
         await auth.updateUser(uid, { displayName });
-    }
+    } 
 
     if (Array.isArray(dietaryPreferences)) {
         dataToUpdate.dietaryPreferences = dietaryPreferences;
@@ -67,6 +64,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "Perfil atualizado com sucesso." });
 
   } catch (error: any) {
+    Sentry.captureException(error); 
     if (error instanceof z.ZodError) {
       return new NextResponse('Dados inválidos.', { status: 400 });
     }

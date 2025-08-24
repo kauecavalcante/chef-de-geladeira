@@ -1,0 +1,120 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContainer {
+  background-color: var(--card-background);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  border: 1px solid var(--border-color);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.headerIcon {
+  color: #f59e0b; 
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground);
+  flex-grow: 1;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0.25rem;
+}
+.closeButton:hover {
+  color: var(--foreground);
+}
+
+.content {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.conflictList {
+  list-style-type: none;
+  padding: 0.75rem 1rem;
+  background-color: var(--tab-background);
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.conflictList li {
+  margin-bottom: 0.5rem;
+}
+.conflictList li:last-child {
+  margin-bottom: 0;
+}
+
+.question {
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.actions {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.actionButton {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-background);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.actionButton:hover {
+  background-color: var(--tab-background);
+  border-color: #ccc;
+  color: var(--foreground);
+}
+
+.primaryButton {
+  background-color: var(--button-dark-bg);
+  color: white;
+  border-color: var(--button-dark-bg);
+}
+
+.primaryButton:hover {
+  background-color: var(--button-dark-hover-bg);
+  border-color: var(--button-dark-hover-bg);
+  color: white;
+}

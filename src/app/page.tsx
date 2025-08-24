@@ -11,8 +11,9 @@ import { TTag } from '@/types';
 import { useRecipeStore } from '../store/recipeStore';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import toast from 'react-hot-toast';
+import { ConflictModal } from '../components/ConflictModal/ConflictModal'; 
 import styles from './Home.module.css';
-import toast from 'react-hot-toast'; 
 
 const RECIPE_STYLES: TTag[] = [
   { key: 'rapida', name: 'Rápida' },
@@ -21,16 +22,26 @@ const RECIPE_STYLES: TTag[] = [
   { key: 'economica', name: 'Econômica' },
 ];
 
+
+type Conflict = {
+  preference: string;
+  ingredients: string[];
+};
+type Resolution = 'assume_compliant' | 'suggest_alternatives' | 'ignore_preference' | 'save_exception';
+
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-
+  
   const [ingredients, setIngredients] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<TTag[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userPreferences, setUserPreferences] = useState<string[]>([]);
-
   const setGeneratedRecipe = useRecipeStore((state) => state.setGeneratedRecipe);
+
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [conflictData, setConflictData] = useState<Conflict[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -125,51 +136,10 @@ export default function HomePage() {
       const validationResult = await validationResponse.json();
 
       if (validationResult.conflict && validationResult.conflicts.length > 0) {
-        setIsLoading(false);
-
-        let conflictMessage = 'Detectamos alguns conflitos:\n\n';
-        validationResult.conflicts.forEach((conflict: { preference: string; ingredients: string[] }) => {
-          const ingredientsList = conflict.ingredients.join(', ');
-          conflictMessage += `- Sua preferência "${conflict.preference}" é violada por: "${ingredientsList}".\n`;
-        });
-
-        conflictMessage += `\nO que gostaria de fazer?\n\nDigite o número da sua escolha:\n1. Considerar meus ingredientes como compatíveis (apenas desta vez).\n2. Sugerir alternativas para os ingredientes.\n3. Ignorar minhas preferências (apenas desta vez).\n4. Considerar meus ingredientes como compatíveis para sempre (ex: "leite" será sempre "leite sem lactose").`;
-
-        const choice = window.prompt(conflictMessage, "1");
-
-        switch (choice) {
-          case "1":
-            proceedToGenerate('assume_compliant');
-            break;
-          case "2":
-            proceedToGenerate('suggest_alternatives');
-            break;
-          case "3":
-            proceedToGenerate('ignore_preference');
-            break;
-          case "4":
-            const savePromises = validationResult.conflicts.flatMap((conflict: any) =>
-              conflict.ingredients.map((ing: string) =>
-                fetch('/api/save-exception', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                  },
-                  body: JSON.stringify({
-                    preference: conflict.preference,
-                    ingredient: ing.toLowerCase(),
-                  }),
-                })
-              )
-            );
-            await Promise.all(savePromises);
-            toast.success("Suas exceções foram salvas! Gerando a receita...");
-            proceedToGenerate('assume_compliant');
-            break;
-          default:
-            return;
-        }
+        
+        setConflictData(validationResult.conflicts);
+        setIsModalOpen(true);
+        setIsLoading(false); 
       } else {
         proceedToGenerate();
       }
@@ -177,6 +147,36 @@ export default function HomePage() {
       console.error("Erro na validação:", error);
       toast.error("Ocorreu um erro ao verificar seus ingredientes. Tente novamente.");
       setIsLoading(false);
+    }
+  };
+
+  
+  const handleConflictResolution = async (resolution: Resolution) => {
+    setIsModalOpen(false); 
+    if (!user) return;
+
+    if (resolution === 'save_exception') {
+      const token = await user.getIdToken();
+      const savePromises = conflictData.flatMap((conflict) =>
+        conflict.ingredients.map((ing) =>
+          fetch('/api/save-exception', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              preference: conflict.preference,
+              ingredient: ing.toLowerCase(),
+            }),
+          })
+        )
+      );
+      await Promise.all(savePromises);
+      toast.success("Suas exceções foram salvas! Gerando a receita...");
+      proceedToGenerate('assume_compliant');
+    } else {
+      proceedToGenerate(resolution);
     }
   };
 
@@ -198,6 +198,14 @@ export default function HomePage() {
   return (
     <>
       <Navbar />
+
+      
+      <ConflictModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        conflicts={conflictData}
+        onResolve={handleConflictResolution}
+      />
 
       <main className={styles.mainContainer}>
         <motion.div
