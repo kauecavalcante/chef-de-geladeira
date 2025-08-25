@@ -14,10 +14,13 @@ import styles from './Account.module.css';
 
 const DIETARY_OPTIONS = ['Vegetariana', 'Sem Glúten', 'Sem Lactose', 'Keto', 'Vegana'];
 
-
 const AccountTab = ({ user, initialName }: { user: any, initialName: string }) => {
     const [displayName, setDisplayName] = useState(initialName);
     const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        setDisplayName(initialName);
+    }, [initialName]);
 
     const handleSaveProfile = async () => {
         if (!user || !displayName.trim()) {
@@ -74,7 +77,6 @@ const AccountTab = ({ user, initialName }: { user: any, initialName: string }) =
         </div>
     );
 };
-
 
 const PreferencesTab = ({ user, initialPreferences, isPremium }: { user: any, initialPreferences: string[], isPremium: boolean }) => {
     const [preferences, setPreferences] = useState(initialPreferences);
@@ -149,7 +151,6 @@ const PreferencesTab = ({ user, initialPreferences, isPremium }: { user: any, in
         </div>
     );
 };
-
 
 const SubscriptionTab = ({ subscription, onManageSubscription, isManaging }: { subscription: any, onManageSubscription: () => void, isManaging: boolean }) => {
     const isPremium = subscription?.plan === 'premium';

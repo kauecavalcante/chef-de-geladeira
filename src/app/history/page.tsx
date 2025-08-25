@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -68,6 +68,40 @@ export default function HistoryPage() {
     },
   };
 
+  const fetchHistoryData = useCallback(async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const plan = userDoc.exists() ? userDoc.data().plan : 'free';
+      setUserPlan(plan);
+
+      const recipesRef = collection(db, 'users', user.uid, 'recipes');
+      let q;
+
+      if (plan === 'free') {
+        q = query(recipesRef, orderBy('createdAt', 'desc'), limit(3));
+      } else {
+        q = query(recipesRef, orderBy('createdAt', 'desc'));
+      }
+
+      const querySnapshot = await getDocs(q);
+      const userRecipes = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as StoredRecipe[];
+
+      setRecipes(userRecipes);
+    } catch (error) {
+      console.error("Erro ao buscar dados:", error);
+      toast.error("Não foi possível carregar os seus dados.");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]); 
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/auth');
@@ -75,40 +109,9 @@ export default function HistoryPage() {
     }
 
     if (user) {
-      const fetchData = async () => {
-        try {
-          const userDocRef = doc(db, 'users', user.uid);
-          const userDoc = await getDoc(userDocRef);
-          const plan = userDoc.exists() ? userDoc.data().plan : 'free';
-          setUserPlan(plan);
-
-          const recipesRef = collection(db, 'users', user.uid, 'recipes');
-          let q;
-
-          if (plan === 'free') {
-            q = query(recipesRef, orderBy('createdAt', 'desc'), limit(3));
-          } else {
-            q = query(recipesRef, orderBy('createdAt', 'desc'));
-          }
-
-          const querySnapshot = await getDocs(q);
-          const userRecipes = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as StoredRecipe[];
-
-          setRecipes(userRecipes);
-        } catch (error) {
-          console.error("Erro ao buscar dados:", error);
-          toast.error("Não foi possível carregar os seus dados.");
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchData();
+      fetchHistoryData();
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, fetchHistoryData]);
 
   const handleRecipeClick = (recipe: StoredRecipe) => {
     setGeneratedRecipe(recipe);

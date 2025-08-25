@@ -4,6 +4,7 @@ import { ArrowUp, ChefHat, Sparkles, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { TTag } from '@/types'; 
 import styles from './IngredientInput.module.css';
+import { useRef, useEffect } from 'react';
 
 type IngredientInputProps = {
   value: string;
@@ -22,6 +23,20 @@ export function IngredientInput({
   placeholder,
   selectedTags,
 }: IngredientInputProps) {
+  
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+     
+      textarea.style.height = 'auto';
+     
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [value]); 
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -39,6 +54,8 @@ export function IngredientInput({
             <ChefHat className={styles.icon} />
           </div>
           <textarea
+           
+            ref={textareaRef}
             value={value}
             onChange={onChange}
             onKeyDown={handleKeyDown}

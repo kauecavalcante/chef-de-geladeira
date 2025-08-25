@@ -33,21 +33,26 @@ async function analyzeSinglePreference(ingredients: string, preference: string):
     if (!ingredients.trim()) {
         return null;
     }
+
   const prompt = `
-    Sua tarefa é ser um especialista em restrições alimentares. Analise a lista de ingredientes de um usuário e veja se algum viola UMA ÚNICA regra.
+    Você é um especialista em nutrição e restrições alimentares com extrema atenção aos detalhes. Sua tarefa é analisar uma lista de ingredientes e identificar violações a UMA regra específica.
 
-    Regra para analisar: "${preference}".
-    Lista de ingredientes do usuário: "${ingredients}".
+    **Regra a ser Verificada:** "${preference}"
 
-    Instruções:
+    **Lista de Ingredientes Fornecida:** "${ingredients}"
+
+    **Instruções Críticas:**
     1.  Analise CADA ingrediente da lista individualmente.
-    2.  Seja muito cuidadoso com o contexto. "leite de amêndoas", "leite de soja" e "leite de aveia" são compatíveis com "Sem Lactose". "Pão sem glúten" é compatível com "Sem Glúten". Apenas identifique violações REAIS.
-    3.  Se um ingrediente viola a regra (ex: "pão" viola "Sem Glúten"; "queijo" viola "Sem Lactose"), adicione o nome EXATO que o usuário digitou à sua lista de resposta.
+    2.  **Seja literal:** Apenas identifique violações diretas. Por exemplo, "leite de amêndoas" NÃO viola "Sem Lactose". "Pão sem glúten" NÃO viola "Sem Glúten".
+    3.  **Ambiguidade:** Se um ingrediente for ambíguo (ex: "creme"), assuma que ele VIOLA a restrição, a menos que o usuário especifique o contrário (ex: "creme de soja").
+    4.  **Resposta:** Se um ingrediente violar a regra, adicione o nome EXATO que o usuário digitou à sua lista de resposta.
 
+    **Formato de Saída OBRIGATÓRIO:**
     Responda APENAS com um objeto JSON no formato:
+    { "conflictingIngredients": ["ingrediente1", "ingrediente2"] }
+
+    Se nenhum ingrediente violar a regra, retorne o array vazio:
     { "conflictingIngredients": [] }
-    
-    Se encontrar ingredientes que violam a regra, coloque-os no array. Se não encontrar nenhum, retorne o array vazio.
   `;
 
   const response = await openai.chat.completions.create({

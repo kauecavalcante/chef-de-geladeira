@@ -22,7 +22,6 @@ const RECIPE_STYLES: TTag[] = [
   { key: 'economica', name: 'Econômica' },
 ];
 
-
 type Conflict = {
   preference: string;
   ingredients: string[];
@@ -38,7 +37,6 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [userPreferences, setUserPreferences] = useState<string[]>([]);
   const setGeneratedRecipe = useRecipeStore((state) => state.setGeneratedRecipe);
-
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [conflictData, setConflictData] = useState<Conflict[]>([]);
@@ -62,7 +60,7 @@ export default function HomePage() {
     }
   }, [user, authLoading, router]);
 
-  const proceedToGenerate = async (conflictResolution?: string) => {
+  const proceedToGenerate = async (ingredientsToUse: string, conflictResolution?: string) => {
     if (!user) {
       toast.error("Você precisa estar logado para gerar uma receita.");
       return;
@@ -77,7 +75,7 @@ export default function HomePage() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          ingredients: ingredients,
+          ingredients: ingredientsToUse,
           styles: selectedStyles.map(s => s.name),
           conflictResolution: conflictResolution,
         }),
@@ -117,6 +115,45 @@ export default function HomePage() {
 
     try {
       const token = await user.getIdToken();
+
+      
+      const filterResponse = await fetch('/api/filter-ingredients', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ ingredients }),
+      });
+
+      if (!filterResponse.ok) {
+        throw new Error('Falha ao validar os itens inseridos.');
+      }
+
+      const filterResult = await filterResponse.json();
+      const validIngredients = filterResult.ingredientesComestiveis || [];
+      const invalidItems = filterResult.itensNaoComestiveis || [];
+
+      if (validIngredients.length === 0) {
+        toast.error("Por favor, insira ingredientes de cozinha válidos.");
+        setIsLoading(false);
+        
+        
+        if (invalidItems.length > 0) {
+         
+          fetch('/api/log-abuse-attempt', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        }
+        return;
+      }
+
+      const validIngredientsString = validIngredients.join(', ');
+
+      
       const validationResponse = await fetch('/api/validate-ingredients', {
         method: 'POST',
         headers: {
@@ -124,32 +161,31 @@ export default function HomePage() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          ingredients: ingredients,
+          ingredients: validIngredientsString,
           preferences: userPreferences,
         }),
       });
 
       if (!validationResponse.ok) {
-        throw new Error('Falha ao validar ingredientes.');
+        throw new Error('Falha ao validar conflitos de ingredientes.');
       }
 
       const validationResult = await validationResponse.json();
 
       if (validationResult.conflict && validationResult.conflicts.length > 0) {
-        
         setConflictData(validationResult.conflicts);
         setIsModalOpen(true);
-        setIsLoading(false); 
+        setIsLoading(false);
       } else {
-        proceedToGenerate();
+        proceedToGenerate(validIngredientsString);
       }
     } catch (error) {
       console.error("Erro na validação:", error);
-      toast.error("Ocorreu um erro ao verificar seus ingredientes. Tente novamente.");
+      const errorMessage = error instanceof Error ? error.message : 'Tente novamente.';
+      toast.error(`Ocorreu um erro: ${errorMessage}`);
       setIsLoading(false);
     }
   };
-
   
   const handleConflictResolution = async (resolution: Resolution) => {
     setIsModalOpen(false); 
@@ -174,9 +210,9 @@ export default function HomePage() {
       );
       await Promise.all(savePromises);
       toast.success("Suas exceções foram salvas! Gerando a receita...");
-      proceedToGenerate('assume_compliant');
+      proceedToGenerate(ingredients, 'assume_compliant');
     } else {
-      proceedToGenerate(resolution);
+      proceedToGenerate(ingredients, resolution);
     }
   };
 
@@ -198,7 +234,6 @@ export default function HomePage() {
   return (
     <>
       <Navbar />
-
       
       <ConflictModal
         isOpen={isModalOpen}

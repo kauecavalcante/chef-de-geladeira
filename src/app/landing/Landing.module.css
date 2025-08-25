@@ -1,0 +1,477 @@
+.pageWrapper {
+  width: 100%;
+  color: var(--foreground);
+  background: linear-gradient(
+    to bottom right,
+    rgb(var(--background-start-rgb)),
+    rgb(var(--background-end-rgb))
+  );
+  overflow-x: hidden;
+}
+
+
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 1.5rem 1rem;
+  z-index: 10;
+}
+
+.nav {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.logoIconWrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(to bottom right, var(--primary-color), #e05d00);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoImage {
+  filter: brightness(0) invert(1);
+}
+
+.navActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loginButton {
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: color 0.2s;
+  color: var(--text-secondary);
+}
+
+.loginButton:hover {
+  color: var(--foreground);
+}
+
+.ctaButton {
+  font-weight: 600;
+  background-color: var(--button-dark-bg);
+  color: #ffffff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 9999px;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.ctaButton:hover {
+  transform: scale(1.05);
+  background-color: var(--button-dark-hover-bg);
+}
+
+
+.heroSection {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rem 1rem 4rem;
+  overflow: hidden;
+}
+
+.heroBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.8;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rem;
+}
+
+.browserMockupContainer {
+  width: 100%;
+  max-width: 800px;
+}
+.browserMockupContainer > div {
+  min-width: 100% !important;
+}
+
+.heroVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.75rem;
+}
+
+.textContent {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.socialProof {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.socialProof p {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.heroTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  max-width: 650px;
+  line-height: 1.2;
+}
+
+.heroSubtitle {
+  font-size: 1.125rem;
+  max-width: 550px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.heroCtaButton {
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  padding: 0.8rem 2rem;
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+}
+.heroCtaButton:hover {
+  background-color: var(--primary-color-hover);
+}
+
+
+.howItWorksSection,
+.benefitsSection,
+.pricingSection,
+.faqSection,
+.finalCtaSection {
+  width: 100%;
+  padding: 4rem 1.5rem;
+}
+
+
+.sectionTitleWrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4rem;
+  text-align: center; 
+}
+
+.stepsGrid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+.stepCard {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 2rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+  border-radius: 1rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stepCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+}
+
+.stepIcon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.stepTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.stepText {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+
+.benefitsGrid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  justify-items: center;
+}
+
+.benefitCard {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  text-align: left;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.benefitCard::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: inherit;
+  border: 2px solid transparent;
+  background: linear-gradient(to right, var(--primary-color), #f54900) border-box;
+  -webkit-mask:
+     linear-gradient(#fff 0 0) padding-box, 
+     linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.benefitCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.benefitCard:hover::before {
+  opacity: 1;
+}
+
+.benefitIcon {
+  width: 50px;
+  height: 50px;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.benefitCard:hover .benefitIcon {
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+}
+
+.benefitTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}
+
+.benefitText {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+
+.pricingGrid {
+  max-width: 800px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.pricingCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem 2rem;
+  background-color: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pricingCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+.premiumCard {
+  border: 2px solid var(--primary-color);
+}
+
+.premiumCard:hover {
+  transform: translateY(-5px) scale(1.02);
+}
+
+.premiumBadge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.planTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.planPrice {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-top: 1rem;
+}
+
+.planPeriod {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.planFeatures {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex-grow: 1;
+}
+
+.planFeatures li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.planCta {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border: 1px solid var(--border-color);
+  background-color: var(--tab-background);
+  color: var(--text-secondary);
+}
+
+.premiumCta {
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+  border: none;
+}
+
+.premiumCta:hover {
+  background-color: var(--primary-color-hover);
+}
+
+
+.finalCtaTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  max-width: 500px;
+}
+
+.finalCtaSubtitle {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  max-width: 450px;
+  margin-bottom: 1rem;
+}
+
+
+
+@media (min-width: 768px) {
+  .header {
+    padding: 1.5rem 2rem;
+  }
+  .heroTitle {
+    font-size: 3.5rem;
+  }
+  .sectionTitleWrapper h2 {
+    font-size: 2.25rem;
+  }
+  .finalCtaTitle {
+    font-size: 2.25rem;
+  }
+  .stepsGrid, .benefitsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .pricingGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .premiumCard:hover {
+    transform: translateY(-5px) scale(1.05);
+  }
+}
+
+
+@media (min-width: 1024px) {
+  .heroTitle {
+    font-size: 4rem;
+  }
+}

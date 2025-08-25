@@ -39,7 +39,8 @@ export function Footer() {
             rel="noopener noreferrer" 
             className={styles.powerByLink}
           >
-            Power by kaue.dev
+            
+              Powered by kaue.dev
           </a>
         </div>
       </div>
